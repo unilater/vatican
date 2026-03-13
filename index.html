@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vatican News | Home Unificata</title>
+    <meta
+      name="description"
+      content="Prototipo grafico per il portale unificato Vatican News con Radio Vaticana per il live e L'Osservatore Romano per l'approfondimento."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="topbar">
+        <div class="topbar__inner">
+          <p class="topbar__label">Portale unificato dell'informazione vaticana</p>
+          <div class="topbar__menus">
+            <nav class="topbar__nav" aria-label="Servizi istituzionali">
+              <a href="#documenti">Documenti ufficiali</a>
+              <a href="#liturgia">Liturgia</a>
+              <a href="#ricerca">Ricerca</a>
+            </nav>
+            <nav class="topbar__langs" id="lingue" aria-label="Lingue Vatican News">
+              <a href="#" aria-current="true">IT</a>
+              <a href="#">EN</a>
+              <a href="#">FR</a>
+              <a href="#">ES</a>
+              <a href="#">PT</a>
+              <a href="#">DE</a>
+              <a href="#">AR</a>
+              <a href="#">ZH</a>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <main>
+        <section class="liturgy-strip" id="liturgia" aria-label="Liturgia del giorno">
+          <p class="liturgy-strip__label">Liturgia del giorno</p>
+          <div class="liturgy-strip__content">
+            <p class="liturgy-strip__title">Venerdi della IV settimana di Quaresima</p>
+            <p class="liturgy-strip__meta">Letture: Sap 2,1a.12-22 · Sal 33 · Gv 7,1-2.10.25-30</p>
+          </div>
+          <div class="liturgy-strip__links">
+            <a href="#">Messa del giorno</a>
+            <a href="#">Liturgia delle Ore</a>
+            <a href="#">Calendario liturgico</a>
+          </div>
+        </section>
+
+        <section class="vn-section" id="vn-section">
+          <div class="vn-section__header">
+            <div class="vn-brand">
+              <img src="assets/Vatican-News.png" alt="Logo Vatican News" class="vn-brand__logo" />
+            </div>
+            <p class="vn-section__date">Venerdì 13 marzo 2026</p>
+          </div>
+
+          <div class="vn-layout">
+            <article class="vn-main-card">
+              <figure class="vn-main-card__media">
+                <img src="assets/vn-live-1.jpg" alt="Papa ai comunicatori" class="vn-main-card__img" />
+              </figure>
+              <div class="vn-main-card__body">
+                <p class="vn-main-card__meta">Attualità | 13:45</p>
+                <h2><a href="article-angelus.html" class="story-link">Il Papa: i cristiani con responsabilità nelle guerre fanno un esame di coscienza</a></h2>
+                <p class="vn-main-card__lead">Nell'udienza del mattino il Pontefice richiama governanti e cittadini alla responsabilità morale davanti ai conflitti che feriscono i popoli.</p>
+                <div class="vn-related">
+                  <p class="vn-related__label">Correlati</p>
+                  <div class="vn-related__groups">
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head">
+                        <img src="assets/radio-vaticana.png" alt="Radio Vaticana" class="vn-related__logo" />
+                      </header>
+                      <ul class="vn-related__titles vn-related__titles--radio">
+                        <li><span class="audio-kind audio-kind--podcast"><span class="audio-kind__icon"></span>Podcast</span>Sintesi integrale dell'udienza del Papa <small class="vn-related__meta">Radio Vaticana | a cura di G. Bernabei | 14:05</small></li>
+                        <li><span class="audio-kind audio-kind--interview"><span class="audio-kind__icon"></span>Intervista</span>Analisi del discorso con ospiti in studio <small class="vn-related__meta">Radio Vaticana | con M. Piacenza | 13:52</small></li>
+                      </ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head">
+                        <img src="assets/osservatore.png" alt="L'Osservatore Romano" class="vn-related__logo" />
+                      </header>
+                      <ul class="vn-related__titles vn-related__titles--or">
+                        <li>Approfondimento: responsabilità cristiana e diplomazia della pace <small class="vn-related__meta">L'Osservatore Romano | di S. Gaeta</small></li>
+                      </ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head">
+                        <img src="assets/vatican-media.jpg" alt="Vatican Media" class="vn-related__logo vn-related__logo--media" />
+                      </header>
+                      <ul class="vn-related__titles vn-related__titles--media">
+                        <li>Video: estratto integrale dell'intervento in Aula Paolo VI <small class="vn-related__meta">Vatican Media | video | 02:31</small></li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <div class="vn-side-grid">
+              <article class="vn-side-box">
+                <div class="vn-side-box__top">
+                  <img src="assets/vn-live-2.jpg" alt="Libano aiuti nei villaggi" class="vn-side-box__thumb" />
+                  <div>
+                    <p class="vn-side-box__meta">Giubileo | 11:20</p>
+                    <h3><a href="article-libano.html" class="story-link">Libano, il nunzio nei villaggi al Sud a portare aiuti: "La gente ha bisogno di sostegno"</a></h3>
+                  </div>
+                </div>
+                <div class="vn-related">
+                  <div class="vn-related__groups">
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/radio-vaticana.png" alt="Radio Vaticana" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--radio"><li><span class="audio-kind audio-kind--podcast"><span class="audio-kind__icon"></span>Podcast</span>Reportage dal Sud del Libano con inviato locale <small class="vn-related__meta">Radio Vaticana | a cura di V. Binetti | 11:38</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/osservatore.png" alt="Osservatore Romano" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--or"><li>Commento: il ruolo della Chiesa nei corridoi umanitari <small class="vn-related__meta">L'Osservatore Romano | di M. Muolo</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/vatican-media.jpg" alt="Vatican Media" class="vn-related__logo vn-related__logo--media" /></header>
+                      <ul class="vn-related__titles vn-related__titles--media"><li>Foto: distribuzione aiuti nei villaggi colpiti <small class="vn-related__meta">Vatican Media | photogallery | 14 scatti</small></li></ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="vn-side-box">
+                <div class="vn-side-box__top">
+                  <img src="assets/vn-or-vaticano.jpg" alt="Leone XIV e imprenditori" class="vn-side-box__thumb" />
+                  <div>
+                    <p class="vn-side-box__meta">Diplomazia | 09:15</p>
+                    <h3>Leone XIV: gli imprenditori promuovano lo sviluppo umano nel rispetto del creato</h3>
+                  </div>
+                </div>
+                <div class="vn-related">
+                  <div class="vn-related__groups">
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/osservatore.png" alt="Osservatore Romano" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--or"><li>Editoriale: impresa, lavoro e bene comune nella dottrina sociale <small class="vn-related__meta">L'Osservatore Romano | di A. Tornielli</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/radio-vaticana.png" alt="Radio Vaticana" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--radio"><li><span class="audio-kind audio-kind--interview"><span class="audio-kind__icon"></span>Intervista</span>Intervento completo di Leone XIV agli imprenditori <small class="vn-related__meta">Radio Vaticana | con A. Gagliarducci | 09:42</small></li></ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="vn-side-box">
+                <div class="vn-side-box__top">
+                  <img src="assets/vn-or-mondo.jpg" alt="Cuba e interlocuzioni diplomatiche" class="vn-side-box__thumb" />
+                  <div>
+                    <p class="vn-side-box__meta">Migranti | 08:00</p>
+                    <h3>Cuba libererà 51 prigionieri dopo interlocuzioni con la Santa Sede</h3>
+                  </div>
+                </div>
+                <div class="vn-related">
+                  <div class="vn-related__groups">
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/osservatore.png" alt="Osservatore Romano" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--or"><li>Analisi: diplomazia silenziosa della Santa Sede a Cuba <small class="vn-related__meta">L'Osservatore Romano | di F. Grana</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/radio-vaticana.png" alt="Radio Vaticana" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--radio"><li><span class="audio-kind audio-kind--podcast"><span class="audio-kind__icon"></span>Podcast</span>Sintesi del notiziario internazionale <small class="vn-related__meta">Radio Vaticana | a cura di F. Sabatinelli | 08:27</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/vatican-media.jpg" alt="Vatican Media" class="vn-related__logo vn-related__logo--media" /></header>
+                      <ul class="vn-related__titles vn-related__titles--media">
+                        <li>Video: cronologia delle interlocuzioni ufficiali <small class="vn-related__meta">Vatican Media | video | 03:12</small></li>
+                        <li>Foto: archivio incontri istituzionali <small class="vn-related__meta">Vatican Media | gallery | 22 scatti</small></li>
+                      </ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+
+              <article class="vn-side-box">
+                <div class="vn-side-box__top">
+                  <img src="assets/vn-or-papa.jpg" alt="Pasolini intervento pubblico" class="vn-side-box__thumb" />
+                  <div>
+                    <p class="vn-side-box__meta">Vaticano | 07:30</p>
+                    <h3>Pasolini: in un mondo di guerre la fraternità non è un ideale ma responsabilità</h3>
+                  </div>
+                </div>
+                <div class="vn-related">
+                  <div class="vn-related__groups">
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/radio-vaticana.png" alt="Radio Vaticana" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--radio"><li><span class="audio-kind audio-kind--interview"><span class="audio-kind__icon"></span>Intervista</span>Sul valore civile della fraternità <small class="vn-related__meta">Radio Vaticana | con C. Seppia | 07:51</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/osservatore.png" alt="Osservatore Romano" class="vn-related__logo" /></header>
+                      <ul class="vn-related__titles vn-related__titles--or"><li>Approfondimento: fraternità e politica nel magistero recente <small class="vn-related__meta">L'Osservatore Romano | di C. Marroni</small></li></ul>
+                    </section>
+                    <section class="vn-related__group">
+                      <header class="vn-related__group-head"><img src="assets/vatican-media.jpg" alt="Vatican Media" class="vn-related__logo vn-related__logo--media" /></header>
+                      <ul class="vn-related__titles vn-related__titles--media"><li>Video: incontro pubblico e domande dei giovani <small class="vn-related__meta">Vatican Media | video | 01:58</small></li></ul>
+                    </section>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section class="rv-section" id="rv-section">
+          <div class="section-heading section-heading--compact">
+            <p class="eyebrow">Radio Vaticana</p>
+            <h2>Radiogiornale e takes</h2>
+          </div>
+
+          <div class="brand-banner brand-banner--radio" aria-label="Identita Radio Vaticana">
+            <div class="brand-banner__logo-wrap">
+              <img src="assets/radio-vaticana.png" alt="Logo Radio Vaticana" class="brand-banner__logo" />
+            </div>
+            <p class="brand-banner__fallback">Il radiogiornale è il contenuto principale; i takes a destra seguono il formato agenzia.</p>
+          </div>
+
+          <div class="rv-section__grid">
+            <article class="rv-journal">
+              <div class="rv-journal__header">
+                <div>
+                  <span class="pill pill--radio">Contenuto principale</span>
+                  <h3>Radiogiornale Vatican News</h3>
+                  <p class="rv-journal__subtitle">Estratti audio con immagini editoriali, selezionati dall'edizione del giorno.</p>
+                </div>
+                <div class="player-card" aria-live="polite">
+                  <div>
+                    <p class="player-card__status" id="player-status">Diretta disponibile</p>
+                    <p class="player-card__title">Radio Vaticana Live</p>
+                  </div>
+                  <button class="button button--small" id="player-toggle" type="button">Ascolta ora</button>
+                </div>
+              </div>
+
+              <div class="rv-journal__cards">
+                <article class="rv-journal-card">
+                  <img src="assets/vn-live-1.jpg" alt="Estratto radiogiornale su udienza del Papa" class="rv-journal-card__img" />
+                  <div>
+                    <p class="rv-journal-card__meta">Podcast | 14:05</p>
+                    <h4>Sintesi integrale dell'udienza del Papa</h4>
+                    <p class="rv-journal-card__by">Radiogiornale | a cura di G. Bernabei</p>
+                  </div>
+                </article>
+                <article class="rv-journal-card">
+                  <img src="assets/vn-live-2.jpg" alt="Estratto radiogiornale da inviato" class="rv-journal-card__img" />
+                  <div>
+                    <p class="rv-journal-card__meta">Podcast | 11:38</p>
+                    <h4>Reportage dal Sud del Libano con inviato locale</h4>
+                    <p class="rv-journal-card__by">Radiogiornale | a cura di V. Binetti</p>
+                  </div>
+                </article>
+                <article class="rv-journal-card">
+                  <img src="assets/vn-or-vaticano.jpg" alt="Estratto radiogiornale con intervista" class="rv-journal-card__img" />
+                  <div>
+                    <p class="rv-journal-card__meta">Intervista | 09:42</p>
+                    <h4>Intervento completo di Leone XIV agli imprenditori</h4>
+                    <p class="rv-journal-card__by">Radiogiornale | con A. Gagliarducci</p>
+                  </div>
+                </article>
+                <article class="rv-journal-card">
+                  <img src="assets/vn-or-mondo.jpg" alt="Estratto notiziario internazionale" class="rv-journal-card__img" />
+                  <div>
+                    <p class="rv-journal-card__meta">Podcast | 08:27</p>
+                    <h4>Sintesi del notiziario internazionale</h4>
+                    <p class="rv-journal-card__by">Radiogiornale | a cura di F. Sabatinelli</p>
+                  </div>
+                </article>
+                <article class="rv-journal-card">
+                  <img src="assets/vn-or-papa.jpg" alt="Intervista su fraternità" class="rv-journal-card__img" />
+                  <div>
+                    <p class="rv-journal-card__meta">Intervista | 07:51</p>
+                    <h4>Sul valore civile della fraternità</h4>
+                    <p class="rv-journal-card__by">Radiogiornale | con C. Seppia</p>
+                  </div>
+                </article>
+              </div>
+            </article>
+
+            <aside class="rv-takes">
+              <div class="rv-takes__head">
+                <h3>Takes | Formato agenzia</h3>
+                <span class="live-core__status" id="live-status">Segnale stabile</span>
+              </div>
+              <ul class="rv-takes__list" id="live-feed-list">
+                <li class="rv-take-item"><span class="rv-take-item__time">14:12</span><strong>Confermata la scaletta speciale del radiogiornale serale</strong></li>
+                <li class="rv-take-item"><span class="rv-take-item__time">13:58</span><strong>Nuovo estratto audio disponibile su canale internazionale</strong></li>
+                <li class="rv-take-item"><span class="rv-take-item__time">13:41</span><strong>Caricato podcast integrale dell'udienza in 6 lingue</strong></li>
+                <li class="rv-take-item"><span class="rv-take-item__time">12:25</span><strong>In aggiornamento il blocco esteri del radiogiornale</strong></li>
+                <li class="rv-take-item"><span class="rv-take-item__time">11:54</span><strong>Apertura finestra interviste: speciale Libano</strong></li>
+                <li class="rv-take-item"><span class="rv-take-item__time">10:48</span><strong>Distribuito nuovo pacchetto clip per media partner</strong></li>
+                <li class="rv-take-item"><span class="rv-take-item__time">09:32</span><strong>Versione breve del radiogiornale online entro le 10:00</strong></li>
+              </ul>
+            </aside>
+          </div>
+        </section>
+
+        <section class="or-section" id="or-section">
+
+          <!-- Testata -->
+          <div class="or-masthead">
+            <img src="assets/osservatore.png" alt="L'Osservatore Romano" class="or-masthead__logo" />
+            <div class="or-masthead__dateline">
+              <span class="or-masthead__edition">Venerdì, 13 marzo 2026 · Anno CLXVI · N. 60</span>
+              <span class="or-masthead__tag">Giornale quotidiano della Santa Sede</span>
+            </div>
+          </div>
+
+          <!-- Layout principale: colonna editoriale + sidebar -->
+          <div class="or-layout">
+
+            <!-- Colonna principale — lettura libera -->
+            <div class="or-main-col">
+
+              <!-- TIER 1 — Articolo di apertura -->
+              <article class="or-lead" aria-label="Articolo di apertura">
+                <img src="assets/vn-or-papa.jpg" alt="Il magistero della prossimità" class="or-lead__img" />
+                <div class="or-lead__header">
+                  <span class="or-rubric">Magistero</span>
+                  <h2 class="or-lead__title"><a href="article-magistero.html" class="story-link">Il magistero della prossimità nel linguaggio pubblico del Pontefice</a></h2>
+                  <p class="or-lead__deck">Come il Papa trasforma la parola ordinaria in strumento pastorale. Un'analisi dei discorsi degli ultimi dodici mesi.</p>
+                </div>
+                <a href="https://www.vatican.va/content/leone-xiv/it/angelus/2026/documents/20260313-angelus.html" class="or-doc-link" target="_blank" rel="noopener noreferrer">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  Testo integrale dell'Angelus · Vatican.va
+                </a>
+                <div class="or-lead__body">
+                  <p>Nella tradizione del pensiero cattolico la prossimità non è mai soltanto gestuale: è una categoria teologica che determina la qualità dell'annuncio. I discorsi recenti del Pontefice rivelano una coerenza stilistica precisa — il ricorso alla concretezza narrativa, alla citazione popolare, alla metafora domestica — che traduce dottrina in esperienza vissuta.</p>
+                  <p>Questa scelta linguistica non è neutra: rispecchia una precisa visione del rapporto tra autorità e ascolto, tra istituzione e periferia.</p>
+                </div>
+                <footer class="or-lead__foot">
+                  <span class="or-byline">di Roberto Cetera</span>
+                  <span class="or-dot" aria-hidden="true">·</span>
+                  <span class="or-meta-time">13 marzo 2026</span>
+                  <a href="article-magistero.html" class="or-readmore">Continua a leggere →</a>
+                </footer>
+              </article>
+
+              <hr class="or-rule" />
+
+              <!-- TIER 2 — Articoli secondari con immagine -->
+              <div class="or-secondaries" aria-label="Articoli in evidenza">
+
+                <article class="or-secondary">
+                  <img src="assets/vn-or-vaticano.jpg" alt="Curia e comunicazione" class="or-secondary__img" />
+                  <div class="or-secondary__body">
+                    <span class="or-rubric or-rubric--sm">Vaticano</span>
+                    <h3 class="or-secondary__title">Curia e comunicazione: modelli nuovi per un servizio più leggibile</h3>
+                    <p class="or-secondary__deck">La diplomazia vaticana nei principali dossier internazionali: strutture, processi, responsabilità.</p>
+                    <a href="https://press.vatican.va/content/salastampa/it/bollettino/pubblico/2026/03/13.html" class="or-doc-link or-doc-link--sm" target="_blank" rel="noopener noreferrer">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      Bollettino Sala Stampa · Vatican.va
+                    </a>
+                    <p class="or-byline or-byline--sm">di M. Conti <span class="or-dot">·</span> 13 mar</p>
+                  </div>
+                </article>
+
+                <article class="or-secondary">
+                  <img src="assets/vn-or-chiesa.jpg" alt="Comunità locali e giubileo" class="or-secondary__img" />
+                  <div class="or-secondary__body">
+                    <span class="or-rubric or-rubric--sm">Chiesa</span>
+                    <h3 class="or-secondary__title">Comunità locali e giubileo: pratiche di accoglienza e testimonianza</h3>
+                    <p class="or-secondary__deck">Sinodalità concreta: esperienze pastorali a confronto nel contesto giubilare 2025-2026.</p>
+                    <p class="or-byline or-byline--sm">di L. Serra <span class="or-dot">·</span> 13 mar</p>
+                  </div>
+                </article>
+
+                <article class="or-secondary">
+                  <img src="assets/vn-or-mondo.jpg" alt="Conflitti dimenticati" class="or-secondary__img" />
+                  <div class="or-secondary__body">
+                    <span class="or-rubric or-rubric--sm">Mondo</span>
+                    <h3 class="or-secondary__title">Conflitti dimenticati e corridoi umanitari: le priorità della comunità internazionale</h3>
+                    <p class="or-secondary__deck">Ecologia integrale, sviluppo e dialogo tra popoli nel messaggio della Santa Sede.</p>
+                    <a href="https://www.vatican.va/content/leone-xiv/it/messages/peace/documents/20260101-messaggio-pace.html" class="or-doc-link or-doc-link--sm" target="_blank" rel="noopener noreferrer">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      Messaggio per la Pace 2026 · Vatican.va
+                    </a>
+                    <p class="or-byline or-byline--sm">di A. Bellini <span class="or-dot">·</span> 13 mar</p>
+                  </div>
+                </article>
+
+              </div><!-- /or-secondaries -->
+
+            </div><!-- /or-main-col -->
+
+            <!-- Sidebar — articoli riservati agli abbonati -->
+            <aside class="or-sidebar" aria-label="Contenuti riservati agli abbonati">
+
+              <div class="or-locked">
+                <div class="or-locked__head">
+                  <svg class="or-locked__head-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                  Solo per abbonati
+                </div>
+                <ul class="or-locked__list">
+                  <li class="or-locked__item">
+                    <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                      <p class="or-locked__title">L'intelligenza artificiale e il futuro dell'etica cristiana: una riflessione inedita</p>
+                      <p class="or-locked__by">di P. Trianni · Cultura &amp; Società</p>
+                    </div>
+                  </li>
+                  <li class="or-locked__item">
+                    <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                      <p class="or-locked__title">Il celibato sacerdotale tra tradizione e dibattito sinodale</p>
+                      <p class="or-locked__by">di V. Bo · Chiesa</p>
+                    </div>
+                  </li>
+                  <li class="or-locked__item">
+                    <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                      <p class="or-locked__title">Francesco d'Assisi e Leone XIV: una continuità spirituale</p>
+                      <p class="or-locked__by">di A. Riccardi · Spiritualità</p>
+                    </div>
+                  </li>
+                  <li class="or-locked__item">
+                    <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                      <p class="or-locked__title">La guerra e la pace nel pensiero di Benedetto XVI: un'eredità incompiuta</p>
+                      <p class="or-locked__by">di G. Ferrò · Geopolitica</p>
+                    </div>
+                  </li>
+                  <li class="or-locked__item">
+                    <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                      <p class="or-locked__title">Editoria cattolica e crisi della carta: il modello OR tra digitale e stampa</p>
+                      <p class="or-locked__by">di M. Politi · Media</p>
+                    </div>
+                  </li>
+                  <li class="or-locked__item">
+                    <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    <div>
+                      <p class="or-locked__title">Giovani e fede nel post-pandemia: i dati dell'ultima indagine europea</p>
+                      <p class="or-locked__by">di F. Garelli · Sociologia</p>
+                    </div>
+                  </li>
+                </ul>
+                <div class="or-locked__cta">
+                  <p class="or-locked__cta-text">Accedi o abbonati per leggere tutti gli articoli riservati de L'Osservatore Romano.</p>
+                  <div class="or-locked__btns">
+                    <a href="#" class="or-locked__btn or-locked__btn--primary">Abbonati</a>
+                    <a href="#" class="or-locked__btn or-locked__btn--secondary">Accedi</a>
+                  </div>
+                </div>
+              </div><!-- /or-locked -->
+
+            </aside><!-- /or-sidebar -->
+
+          </div><!-- /or-layout -->
+
+        </section>
+
+        <section class="archives-section" id="archivi" aria-label="Archivi podcast e sezioni Vatican News">
+          <div class="section-heading section-heading--compact">
+            <p class="eyebrow">Vatican News</p>
+            <h2>Archivi podcast e sezioni tematiche</h2>
+          </div>
+
+          <div class="archives-grid" aria-label="Archivi podcast in quattro colonne">
+            <article class="archive-col">
+              <h3>Radiogiornale</h3>
+              <ul>
+                <li><a href="#">Edizione Mattino</a><small>agg. 07:00</small></li>
+                <li><a href="#">Edizione Pranzo</a><small>agg. 13:00</small></li>
+                <li><a href="#">Edizione Sera</a><small>agg. 19:00</small></li>
+              </ul>
+            </article>
+            <article class="archive-col">
+              <h3>Podcast del Papa</h3>
+              <ul>
+                <li><a href="#">Udienze generali</a><small>142 episodi</small></li>
+                <li><a href="#">Angelus e Regina Coeli</a><small>210 episodi</small></li>
+                <li><a href="#">Viaggi apostolici</a><small>89 episodi</small></li>
+              </ul>
+            </article>
+            <article class="archive-col">
+              <h3>Interviste</h3>
+              <ul>
+                <li><a href="#">Curia e Santa Sede</a><small>settimanale</small></li>
+                <li><a href="#">Missioni e periferie</a><small>quindicinale</small></li>
+                <li><a href="#">Dialogo interreligioso</a><small>mensile</small></li>
+              </ul>
+            </article>
+            <article class="archive-col">
+              <h3>Speciali audio</h3>
+              <ul>
+                <li><a href="#">Giubileo 2025-2026</a><small>serie in corso</small></li>
+                <li><a href="#">Documentari sonori</a><small>34 titoli</small></li>
+                <li><a href="#">Archivio storico RV</a><small>dal 1931</small></li>
+              </ul>
+            </article>
+          </div>
+
+          <div class="vn-verticals" aria-label="Sezioni Vatican News riadattate">
+            <article class="vertical-card">
+              <p class="vertical-card__kicker">Vaticano</p>
+              <h3>Agenda del Papa</h3>
+              <p>Discorsi, udienze, viaggi e testi principali con sintesi redazionale e rimando ai documenti ufficiali.</p>
+            </article>
+            <article class="vertical-card">
+              <p class="vertical-card__kicker">Mondo</p>
+              <h3>Crisi internazionali</h3>
+              <p>Copertura essenziale dei conflitti e delle emergenze umanitarie con focus diplomatico della Santa Sede.</p>
+            </article>
+            <article class="vertical-card">
+              <p class="vertical-card__kicker">Chiesa</p>
+              <h3>Vita delle comunita</h3>
+              <p>Diocesi, cammini sinodali e pastorale locale con notizie curate in formato breve e verificabile.</p>
+            </article>
+            <article class="vertical-card">
+              <p class="vertical-card__kicker">Cultura</p>
+              <h3>Pensiero e societa</h3>
+              <p>Approfondimenti su etica, media e dialogo tra fede e contemporaneita con stile divulgativo sobrio.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="footer">
+        <div>
+          <p class="eyebrow">Vatican News</p>
+          <p>Contenitore editoriale unico per informazione, live e approfondimento.</p>
+        </div>
+        <div>
+          <p class="footer__label">Testate storiche</p>
+          <p>Radio Vaticana per il live. L'Osservatore Romano per l'approfondimento.</p>
+        </div>
+        <div>
+          <p class="footer__label">Ambiente istituzionale</p>
+          <p>Vatican.va conserva i documenti ufficiali e il patrimonio documentale della Santa Sede.</p>
+        </div>
+      </footer>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
