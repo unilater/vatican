@@ -49,9 +49,57 @@
           </div>
         </section>
 
+        <section class="editor-flow" aria-label="Note interne redazione">
+          <div class="editor-flow__head">
+            <p class="editor-flow__tag">Uso interno</p>
+            <h2>Flusso redazionale (box istruttivi)</h2>
+          </div>
+
+          <div class="editor-flow__grid">
+            <article class="editor-flow__card editor-flow__card--critical">
+              <h3>Dominio Osservatore Romano</h3>
+              <p>
+                Il dominio osservatoreromano verra dismesso: i contenuti confluiranno nel portale unificato.
+              </p>
+            </article>
+
+            <article class="editor-flow__card">
+              <h3>Vatican News + Radio Vaticana</h3>
+              <p>
+                Flusso invariato in diretta: pubblicazione da redazione italiana tramite AEM (Adobe Experience Manager).
+              </p>
+            </article>
+
+            <article class="editor-flow__card">
+              <h3>L'Osservatore Romano</h3>
+              <p>
+                Alimentazione da GN4 alla chiusura giornale, con pubblicazione a fine ciclo editoriale.
+              </p>
+            </article>
+
+            <article class="editor-flow__card editor-flow__card--open">
+              <h3>Punto aperto</h3>
+              <p>
+                Completare la nota operativa relativa al flusso "mentre per..." con responsabilita, orario e sistema di pubblicazione.
+              </p>
+            </article>
+          </div>
+
+          <div class="editor-flow__rss" aria-label="Demo interazione RSS Osservatore Romano">
+            <div class="editor-flow__rss-head">
+              <h3>Prova interazione RSS OR</h3>
+              <button type="button" id="rss-load-or" class="editor-flow__rss-btn">Carica ultimi titoli</button>
+            </div>
+            <p id="rss-or-status" class="editor-flow__rss-status">Premi il pulsante per testare il feed live.</p>
+            <ul id="rss-or-list" class="editor-flow__rss-list"></ul>
+          </div>
+        </section>
+
         <section class="vn-section" id="vn-section">
           <div class="vn-section__header">
-            <div class="vn-brand">
+            <div class="vn-brand vn-brand--live">
+              <span class="live-dot" aria-label="Live">●</span>
+              <span class="live-label">LIVE</span>
               <img src="assets/Vatican-News.png" alt="Logo Vatican News" class="vn-brand__logo" />
             </div>
             <p class="vn-section__date">Venerdì 13 marzo 2026</p>
@@ -63,9 +111,11 @@
                 <img src="assets/vn-live-1.jpg" alt="Papa ai comunicatori" class="vn-main-card__img" />
               </figure>
               <div class="vn-main-card__body">
+                <!-- badge rimosse, ora solo timeline e correlati -->
                 <p class="vn-main-card__meta">Attualità | 13:45</p>
                 <h2><a href="article-angelus.html" class="story-link">Il Papa: i cristiani con responsabilità nelle guerre fanno un esame di coscienza</a></h2>
                 <p class="vn-main-card__lead">Nell'udienza del mattino il Pontefice richiama governanti e cittadini alla responsabilità morale davanti ai conflitti che feriscono i popoli.</p>
+                <p class="vn-main-card__integration">Copertura integrata: LIVE Vatican News, approfondimento de L'Osservatore Romano, audio di Radio Vaticana.</p>
                 <div class="vn-related">
                   <p class="vn-related__label">Correlati</p>
                   <div class="vn-related__groups">
@@ -216,23 +266,39 @@
             <div class="brand-banner__logo-wrap">
               <img src="assets/radio-vaticana.png" alt="Logo Radio Vaticana" class="brand-banner__logo" />
             </div>
-            <p class="brand-banner__fallback">Il radiogiornale è il contenuto principale; i takes a destra seguono il formato agenzia.</p>
           </div>
 
           <div class="rv-section__grid">
             <article class="rv-journal">
               <div class="rv-journal__header">
                 <div>
-                  <span class="pill pill--radio">Contenuto principale</span>
                   <h3>Radiogiornale Vatican News</h3>
                   <p class="rv-journal__subtitle">Estratti audio con immagini editoriali, selezionati dall'edizione del giorno.</p>
                 </div>
                 <div class="player-card" aria-live="polite">
                   <div>
-                    <p class="player-card__status" id="player-status">Diretta disponibile</p>
-                    <p class="player-card__title">Radio Vaticana Live</p>
+                    <p class="player-card__title">Streaming audio principale</p>
+                    <p class="visually-hidden" id="player-status">Diretta disponibile</p>
                   </div>
                   <button class="button button--small" id="player-toggle" type="button">Ascolta ora</button>
+                </div>
+              </div>
+
+              <div class="rv-highlighted" aria-label="Contenuti in evidenza sotto lo streaming">
+                <p class="rv-highlighted__title">In evidenza</p>
+                <div class="rv-highlighted__list">
+                  <a href="#" class="rv-highlighted__item">
+                    <span class="rv-highlighted__time">14:05</span>
+                    <span class="rv-highlighted__text">Sintesi integrale dell'udienza del Papa</span>
+                  </a>
+                  <a href="#" class="rv-highlighted__item">
+                    <span class="rv-highlighted__time">11:38</span>
+                    <span class="rv-highlighted__text">Reportage dal Sud del Libano con inviato locale</span>
+                  </a>
+                  <a href="#" class="rv-highlighted__item">
+                    <span class="rv-highlighted__time">09:42</span>
+                    <span class="rv-highlighted__text">Intervento completo di Leone XIV agli imprenditori</span>
+                  </a>
                 </div>
               </div>
 
@@ -283,7 +349,7 @@
             <aside class="rv-takes">
               <div class="rv-takes__head">
                 <h3>Takes | Formato agenzia</h3>
-                <span class="live-core__status" id="live-status">Segnale stabile</span>
+                <span class="visually-hidden" id="live-status">Segnale stabile</span>
               </div>
               <ul class="rv-takes__list" id="live-feed-list">
                 <li class="rv-take-item"><span class="rv-take-item__time">14:12</span><strong>Confermata la scaletta speciale del radiogiornale serale</strong></li>
@@ -307,6 +373,7 @@
               <span class="or-masthead__edition">Venerdì, 13 marzo 2026 · Anno CLXVI · N. 60</span>
               <span class="or-masthead__tag">Giornale quotidiano della Santa Sede</span>
             </div>
+            <a href="or-abbonati-sfogliatore.html" class="or-private-entry">Area abbonati · Sfogliatore</a>
           </div>
 
           <!-- Layout principale: colonna editoriale + sidebar -->
@@ -398,42 +465,42 @@
                   <li class="or-locked__item">
                     <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <div>
-                      <p class="or-locked__title">L'intelligenza artificiale e il futuro dell'etica cristiana: una riflessione inedita</p>
+                      <a href="or-abbonati-sfogliatore.html?art=ai-etica" class="or-locked__title">L'intelligenza artificiale e il futuro dell'etica cristiana: una riflessione inedita</a>
                       <p class="or-locked__by">di P. Trianni · Cultura &amp; Società</p>
                     </div>
                   </li>
                   <li class="or-locked__item">
                     <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <div>
-                      <p class="or-locked__title">Il celibato sacerdotale tra tradizione e dibattito sinodale</p>
+                      <a href="or-abbonati-sfogliatore.html?art=celibato-sinodo" class="or-locked__title">Il celibato sacerdotale tra tradizione e dibattito sinodale</a>
                       <p class="or-locked__by">di V. Bo · Chiesa</p>
                     </div>
                   </li>
                   <li class="or-locked__item">
                     <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <div>
-                      <p class="or-locked__title">Francesco d'Assisi e Leone XIV: una continuità spirituale</p>
+                      <a href="or-abbonati-sfogliatore.html?art=francesco-leone" class="or-locked__title">Francesco d'Assisi e Leone XIV: una continuità spirituale</a>
                       <p class="or-locked__by">di A. Riccardi · Spiritualità</p>
                     </div>
                   </li>
                   <li class="or-locked__item">
                     <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <div>
-                      <p class="or-locked__title">La guerra e la pace nel pensiero di Benedetto XVI: un'eredità incompiuta</p>
+                      <a href="or-abbonati-sfogliatore.html?art=benedetto-pace" class="or-locked__title">La guerra e la pace nel pensiero di Benedetto XVI: un'eredità incompiuta</a>
                       <p class="or-locked__by">di G. Ferrò · Geopolitica</p>
                     </div>
                   </li>
                   <li class="or-locked__item">
                     <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <div>
-                      <p class="or-locked__title">Editoria cattolica e crisi della carta: il modello OR tra digitale e stampa</p>
+                      <a href="or-abbonati-sfogliatore.html?art=editoria-or" class="or-locked__title">Editoria cattolica e crisi della carta: il modello OR tra digitale e stampa</a>
                       <p class="or-locked__by">di M. Politi · Media</p>
                     </div>
                   </li>
                   <li class="or-locked__item">
                     <svg class="or-locked__item-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     <div>
-                      <p class="or-locked__title">Giovani e fede nel post-pandemia: i dati dell'ultima indagine europea</p>
+                      <a href="or-abbonati-sfogliatore.html?art=giovani-fede" class="or-locked__title">Giovani e fede nel post-pandemia: i dati dell'ultima indagine europea</a>
                       <p class="or-locked__by">di F. Garelli · Sociologia</p>
                     </div>
                   </li>
@@ -441,8 +508,8 @@
                 <div class="or-locked__cta">
                   <p class="or-locked__cta-text">Accedi o abbonati per leggere tutti gli articoli riservati de L'Osservatore Romano.</p>
                   <div class="or-locked__btns">
-                    <a href="#" class="or-locked__btn or-locked__btn--primary">Abbonati</a>
-                    <a href="#" class="or-locked__btn or-locked__btn--secondary">Accedi</a>
+                    <a href="or-abbonati-sfogliatore.html#abbonati" class="or-locked__btn or-locked__btn--primary">Abbonati</a>
+                    <a href="or-abbonati-sfogliatore.html#accedi" class="or-locked__btn or-locked__btn--secondary">Accedi</a>
                   </div>
                 </div>
               </div><!-- /or-locked -->
