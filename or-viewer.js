@@ -9,10 +9,12 @@
   const highlightLayer = document.getElementById('or-pdf-highlight-layer');
   const hitLayer = document.getElementById('or-pdf-hit-layer');
   const viewerLabel = document.getElementById('or-viewer-label');
+  const editionNumber = document.getElementById('or-edition-number');
+  const editionDate = document.getElementById('or-edition-date');
+  const pdfLoader = document.getElementById('or-pdf-loader');
+  const pdfLoaderText = document.getElementById('or-pdf-loader-text');
   const pdfHint = document.getElementById('or-pdf-hint');
   const searchResult = document.getElementById('or-search-result');
-  const searchForm = document.getElementById('or-search-form');
-  const searchInput = document.getElementById('or-search-title');
   const fitButton = document.getElementById('or-fit-toggle');
   const zoomButton = document.getElementById('or-zoom-toggle');
 
@@ -27,6 +29,9 @@
   const minimapCanvas = document.getElementById('or-minimap-canvas');
   const minimapViewport = document.getElementById('or-minimap-viewport');
   const minimapLabel = document.getElementById('or-minimap-label');
+  const mobileListToggle = document.getElementById('or-mobile-list-toggle');
+  const mobileListClose = document.getElementById('or-mobile-list-close');
+  const mobileListBackdrop = document.getElementById('or-mobile-list-backdrop');
 
   const PDFJS_SOURCES = [
     {
@@ -45,6 +50,7 @@
   let selectedEditionId = '';
   let selectedEdition = null;
   let mappings = [];
+  let rssItems = [];
   let selectedMappedArticleId = '';
 
   let pdfDocument = null;
@@ -56,21 +62,52 @@
   let fitWidthScale = 1;
   let fitMode = 'page';
   let renderedTotalScale = 1;
-  let pdfTextIndex = [];
   let isLoadingEdition = false;
   let isZoomAnimating = false;
   let activeFocusRegion = null;
+  let activeFocusRegions = [];
   let isMagnetFocusEnabled = false;
   let isApplyingMagnetScroll = false;
   let isMagnetBypassActive = false;
   const pageCache = new Map();
-  const articleRegionCursor = new Map();
 
   const LOREM_IPSUM_PREVIEW = [
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
     'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
     'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
   ].join(' ');
+
+  function isMobileLayout() {
+    return window.matchMedia('(max-width: 820px)').matches;
+  }
+
+  function setMobileListOpen(isOpen) {
+    if (!isMobileLayout()) {
+      document.body.classList.remove('or-mobile-list-open');
+      document.body.classList.remove('or-mobile-list-collapsed');
+      if (mobileListToggle) {
+        mobileListToggle.setAttribute('aria-expanded', 'false');
+        mobileListToggle.textContent = 'Apri titoli';
+      }
+      if (mobileListClose) {
+        mobileListClose.textContent = 'Chiudi titoli';
+      }
+      return;
+    }
+
+    const shouldOpen = Boolean(isOpen);
+    document.body.classList.toggle('or-mobile-list-open', shouldOpen);
+    document.body.classList.toggle('or-mobile-list-collapsed', !shouldOpen);
+
+    if (mobileListToggle) {
+      mobileListToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+      mobileListToggle.textContent = shouldOpen ? 'Chiudi titoli' : 'Apri titoli';
+    }
+
+    if (mobileListClose) {
+      mobileListClose.textContent = 'Chiudi titoli';
+    }
+  }
 
   function normalizeText(value) {
     return (value || '')
@@ -79,6 +116,101 @@
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function stripHtml(value) {
+    const html = String(value || '');
+    if (!html) {
+      return '';
+    }
+
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function parseEditionDate(edition) {
+    if (!edition) {
+      return '';
+    }
+
+    if (edition.id && /^\d{4}-\d{2}-\d{2}$/.test(edition.id)) {
+      return edition.id;
+    }
+
+    const fromName = String(edition.name || '').match(/(\d{4}-\d{2}-\d{2})/);
+    return fromName ? fromName[1] : '';
+  }
+
+  function formatItalianDate(isoDate) {
+    if (!isoDate) {
+      return '--';
+    }
+
+    const dt = new Date(`${isoDate}T00:00:00`);
+    if (Number.isNaN(dt.getTime())) {
+      return isoDate;
+    }
+
+    return new Intl.DateTimeFormat('it-IT', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    }).format(dt);
+  }
+
+  function extractEditionNumber(edition) {
+    if (!edition) {
+      return '--';
+    }
+
+    const fromName = String(edition.name || '').match(/(\d+)/);
+    if (fromName) {
+      return fromName[1];
+    }
+
+    const fromId = String(edition.id || '').match(/(\d{2})$/);
+    return fromId ? fromId[1] : '--';
+  }
+
+  function updateEditionMeta() {
+    if (editionNumber) {
+      editionNumber.textContent = `Edizione ${extractEditionNumber(selectedEdition)}`;
+    }
+
+    if (editionDate) {
+      const parsedDate = parseEditionDate(selectedEdition);
+      editionDate.textContent = formatItalianDate(parsedDate);
+      editionDate.setAttribute('datetime', parsedDate || '');
+    }
+  }
+
+  function buildArticleMeta(article) {
+    const normalized = normalizeText(stripHtml(article.titleNormalized || article.title));
+    const rssMatch = rssItems.find((item) => (
+      normalizeText(stripHtml(item.titleNormalized || item.title)) === normalized
+    ));
+
+    const description = stripHtml(rssMatch?.description || '');
+
+    if (description) {
+      return description.length > 190
+        ? `${description.slice(0, 187)}...`
+        : description;
+    }
+
+    return 'Descrizione non disponibile nel feed RSS.';
   }
 
   function setEditionStatus(message, isError = false) {
@@ -115,6 +247,17 @@
     }
     if (zoomButton) {
       zoomButton.disabled = isLoading || isZoomAnimating;
+    }
+  }
+
+  function setPdfLoadingState(isLoading, message = 'Caricamento PDF...') {
+    if (!pdfLoader) {
+      return;
+    }
+
+    pdfLoader.classList.toggle('is-hidden', !isLoading);
+    if (pdfLoaderText) {
+      pdfLoaderText.textContent = message;
     }
   }
 
@@ -206,22 +349,71 @@
       return;
     }
 
-    const mask = document.createElement('div');
-    mask.className = 'or-pdf-focus-mask';
-    mask.style.left = `${activeFocusRegion.rect.x * 100}%`;
-    mask.style.top = `${activeFocusRegion.rect.y * 100}%`;
-    mask.style.width = `${activeFocusRegion.rect.w * 100}%`;
-    mask.style.height = `${activeFocusRegion.rect.h * 100}%`;
+    const regionsOnCurrentPage = activeFocusRegions
+      .filter((region) => region.page === currentPage);
 
-    const box = document.createElement('div');
-    box.className = 'or-pdf-focus-box';
-    box.style.left = `${activeFocusRegion.rect.x * 100}%`;
-    box.style.top = `${activeFocusRegion.rect.y * 100}%`;
-    box.style.width = `${activeFocusRegion.rect.w * 100}%`;
-    box.style.height = `${activeFocusRegion.rect.h * 100}%`;
+    if (regionsOnCurrentPage.length === 0) {
+      return;
+    }
 
-    highlightLayer.appendChild(mask);
-    highlightLayer.appendChild(box);
+    // Oscura tutta la pagina lasciando finestre trasparenti esattamente sulle aree selezionate.
+    // Usa una mask SVG (non even-odd) per evitare ri-oscuramenti nelle intersezioni.
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const dimmer = document.createElementNS(svgNS, 'svg');
+    dimmer.setAttribute('class', 'or-pdf-focus-dimmer');
+    dimmer.setAttribute('viewBox', '0 0 100 100');
+    dimmer.setAttribute('preserveAspectRatio', 'none');
+
+    const defs = document.createElementNS(svgNS, 'defs');
+    const mask = document.createElementNS(svgNS, 'mask');
+    const maskId = `or-focus-mask-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    mask.setAttribute('id', maskId);
+
+    const maskBg = document.createElementNS(svgNS, 'rect');
+    maskBg.setAttribute('x', '0');
+    maskBg.setAttribute('y', '0');
+    maskBg.setAttribute('width', '100');
+    maskBg.setAttribute('height', '100');
+    maskBg.setAttribute('fill', 'white');
+    mask.appendChild(maskBg);
+
+    regionsOnCurrentPage.forEach((region) => {
+      const x = region.rect.x * 100;
+      const y = region.rect.y * 100;
+      const w = region.rect.w * 100;
+      const h = region.rect.h * 100;
+      const hole = document.createElementNS(svgNS, 'rect');
+      hole.setAttribute('x', String(x));
+      hole.setAttribute('y', String(y));
+      hole.setAttribute('width', String(w));
+      hole.setAttribute('height', String(h));
+      hole.setAttribute('fill', 'black');
+      mask.appendChild(hole);
+    });
+
+    defs.appendChild(mask);
+    dimmer.appendChild(defs);
+
+    const overlay = document.createElementNS(svgNS, 'rect');
+    overlay.setAttribute('x', '0');
+    overlay.setAttribute('y', '0');
+    overlay.setAttribute('width', '100');
+    overlay.setAttribute('height', '100');
+    overlay.setAttribute('fill', 'rgba(12, 17, 26, 0.5)');
+    overlay.setAttribute('mask', `url(#${maskId})`);
+    dimmer.appendChild(overlay);
+
+    highlightLayer.appendChild(dimmer);
+
+    regionsOnCurrentPage.forEach((region) => {
+      const spot = document.createElement('div');
+      spot.className = 'or-pdf-focus-spot';
+      spot.style.left = `${region.rect.x * 100}%`;
+      spot.style.top = `${region.rect.y * 100}%`;
+      spot.style.width = `${region.rect.w * 100}%`;
+      spot.style.height = `${region.rect.h * 100}%`;
+      highlightLayer.appendChild(spot);
+    });
   }
 
   function sortRegions(regions) {
@@ -239,25 +431,115 @@
     });
   }
 
-  function getArticleCursorKey(article) {
-    return article?.id || `${article?.title || 'untitled'}::${selectedEditionId || 'edition'}`;
-  }
-
-  function getNextRegionForArticle(article) {
-    const ordered = sortRegions(article.regions || []);
-    if (ordered.length === 0) {
-      return { region: null, index: 0, total: 0 };
+  function mergeRegions(regions) {
+    if (!regions || regions.length === 0) {
+      return null;
     }
 
-    const key = getArticleCursorKey(article);
-    const cursor = articleRegionCursor.get(key) || 0;
-    const nextIndex = cursor % ordered.length;
-    articleRegionCursor.set(key, cursor + 1);
+    const minX = Math.min(...regions.map((region) => region.rect.x));
+    const minY = Math.min(...regions.map((region) => region.rect.y));
+    const maxX = Math.max(...regions.map((region) => region.rect.x + region.rect.w));
+    const maxY = Math.max(...regions.map((region) => region.rect.y + region.rect.h));
 
     return {
-      region: ordered[nextIndex],
-      index: nextIndex + 1,
-      total: ordered.length
+      id: `group-${regions.map((region) => region.id || 'r').join('-')}`,
+      page: regions[0].page,
+      rect: {
+        x: minX,
+        y: minY,
+        w: Math.max(0.001, maxX - minX),
+        h: Math.max(0.001, maxY - minY)
+      }
+    };
+  }
+
+  function sameRegion(a, b) {
+    if (!a || !b) {
+      return false;
+    }
+
+    if (a.id && b.id) {
+      return a.id === b.id;
+    }
+
+    return (
+      a.page === b.page
+      && a.rect.x === b.rect.x
+      && a.rect.y === b.rect.y
+      && a.rect.w === b.rect.w
+      && a.rect.h === b.rect.h
+    );
+  }
+
+  function rectsTouchOrOverlap(rectA, rectB, pad = 0.002) {
+    const aLeft = rectA.x - pad;
+    const aTop = rectA.y - pad;
+    const aRight = rectA.x + rectA.w + pad;
+    const aBottom = rectA.y + rectA.h + pad;
+
+    const bLeft = rectB.x - pad;
+    const bTop = rectB.y - pad;
+    const bRight = rectB.x + rectB.w + pad;
+    const bBottom = rectB.y + rectB.h + pad;
+
+    return !(aRight < bLeft || bRight < aLeft || aBottom < bTop || bBottom < aTop);
+  }
+
+  function getConnectedCluster(regions, seedRegion) {
+    if (!regions || regions.length === 0) {
+      return [];
+    }
+
+    const seed = seedRegion
+      ? regions.find((region) => sameRegion(region, seedRegion)) || regions[0]
+      : regions[0];
+
+    const stack = [seed];
+    const cluster = [];
+    const visited = new Set();
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      const key = current.id || `${current.page}:${current.rect.x}:${current.rect.y}:${current.rect.w}:${current.rect.h}`;
+
+      if (visited.has(key)) {
+        continue;
+      }
+
+      visited.add(key);
+      cluster.push(current);
+
+      regions.forEach((candidate) => {
+        const candidateKey = candidate.id || `${candidate.page}:${candidate.rect.x}:${candidate.rect.y}:${candidate.rect.w}:${candidate.rect.h}`;
+        if (visited.has(candidateKey)) {
+          return;
+        }
+
+        if (rectsTouchOrOverlap(current.rect, candidate.rect)) {
+          stack.push(candidate);
+        }
+      });
+    }
+
+    return sortRegions(cluster);
+  }
+
+  function getFocusGroupForArticle(article, preferredPage = null, seedRegion = null) {
+    const ordered = sortRegions(article.regions || []);
+    if (ordered.length === 0) {
+      return { focusRegion: null, regions: [], selectedCount: 0, totalCount: 0 };
+    }
+
+    const targetPage = preferredPage || seedRegion?.page || ordered[0].page;
+    const pageRegions = ordered.filter((region) => region.page === targetPage);
+    const grouped = getConnectedCluster(pageRegions, seedRegion);
+    const focusRegion = mergeRegions(grouped);
+
+    return {
+      focusRegion,
+      regions: grouped,
+      selectedCount: grouped.length,
+      totalCount: ordered.length
     };
   }
 
@@ -266,8 +548,8 @@
       if (!article) {
         textPreviewLead.textContent = 'Seleziona un titolo per aprire il focus e vedere l\'anteprima.';
       } else {
-        const suffix = regionInfo && regionInfo.total > 1
-          ? `Area ${regionInfo.index}/${regionInfo.total}`
+        const suffix = regionInfo && regionInfo.totalCount > 1
+          ? `Rettangoli in focus: ${regionInfo.selectedCount}/${regionInfo.totalCount}`
           : 'Area selezionata';
         textPreviewLead.textContent = `${article.title} - ${suffix}`;
       }
@@ -298,8 +580,8 @@
     }
 
     if (article?.url) {
-      const suffix = regionInfo && regionInfo.total > 1
-        ? `Area ${regionInfo.index}/${regionInfo.total}. `
+      const suffix = regionInfo && regionInfo.totalCount > 1
+        ? `Rettangoli attivi: ${regionInfo.selectedCount}/${regionInfo.totalCount}. `
         : 'Area selezionata. ';
       searchResult.innerHTML = `${suffix}<a class="or-inline-article-link" href="${article.url}" target="_blank" rel="noopener">Apri versione testuale</a>.`;
       return;
@@ -436,25 +718,10 @@
     hitLayer.innerHTML = '';
 
     mappings.forEach((article) => {
-      const orderedRegions = sortRegions(article.regions || []);
-
       article.regions
         .filter((region) => region.page === currentPage)
         .forEach((region) => {
-          const regionIndex = orderedRegions.findIndex((item) => (
-            (item.id && region.id && item.id === region.id)
-            || (
-              item.page === region.page
-              && item.rect.x === region.rect.x
-              && item.rect.y === region.rect.y
-              && item.rect.w === region.rect.w
-              && item.rect.h === region.rect.h
-            )
-          ));
-          const regionInfo = {
-            index: regionIndex >= 0 ? regionIndex + 1 : 1,
-            total: orderedRegions.length
-          };
+          const groupInfo = getFocusGroupForArticle(article, region.page, region);
 
           const hit = document.createElement('button');
           hit.type = 'button';
@@ -471,21 +738,23 @@
             hit,
             () => {
               selectedMappedArticleId = article.id;
-              activeFocusRegion = region;
+              activeFocusRegion = groupInfo.focusRegion;
+              activeFocusRegions = groupInfo.regions;
               isMagnetFocusEnabled = true;
               renderMappedList();
-              cinematicZoomToRegion(region);
-              setArticleTextHint(article, regionInfo);
-              setTextPreview(article, regionInfo);
+              cinematicZoomToRegion(groupInfo.focusRegion);
+              setArticleTextHint(article, groupInfo);
+              setTextPreview(article, groupInfo);
             },
             () => {
               selectedMappedArticleId = article.id;
-              activeFocusRegion = region;
+              activeFocusRegion = groupInfo.focusRegion;
+              activeFocusRegions = groupInfo.regions;
               isMagnetFocusEnabled = true;
               renderMappedList();
-              readabilityZoomToRegion(region);
-              setArticleTextHint(article, regionInfo);
-              setTextPreview(article, regionInfo);
+              readabilityZoomToRegion(groupInfo.focusRegion);
+              setArticleTextHint(article, groupInfo);
+              setTextPreview(article, groupInfo);
             }
           );
 
@@ -701,7 +970,7 @@
       return;
     }
 
-    setMappedStatus(`Titoli mappati disponibili: ${mappings.length}.`);
+    setMappedStatus(`Titoli disponibili: ${mappings.length}.`);
 
     mappings.forEach((article) => {
       const li = document.createElement('li');
@@ -711,31 +980,37 @@
       if (article.id === selectedMappedArticleId) {
         button.classList.add('is-active');
       }
-      button.innerHTML = `<span class="or-rss-linker__item-title">${article.title}</span><small>Aree mappate: ${article.regions.length}</small>`;
+      const displayTitle = stripHtml(article.title);
+      const metaLabel = buildArticleMeta(article);
+      button.innerHTML = `<span class="or-rss-linker__item-title">${escapeHtml(displayTitle)}</span><small>${escapeHtml(metaLabel)}</small>`;
       bindSingleAndDoubleClick(
         button,
         () => {
           selectedMappedArticleId = article.id;
           renderMappedList();
-          const regionInfo = getNextRegionForArticle(article);
-          if (regionInfo.region) {
-            activeFocusRegion = regionInfo.region;
+          const groupInfo = getFocusGroupForArticle(article);
+          if (groupInfo.focusRegion) {
+            activeFocusRegion = groupInfo.focusRegion;
+            activeFocusRegions = groupInfo.regions;
             isMagnetFocusEnabled = true;
-            cinematicZoomToRegion(regionInfo.region);
-            setArticleTextHint(article, regionInfo);
-            setTextPreview(article, regionInfo);
+            cinematicZoomToRegion(groupInfo.focusRegion);
+            setArticleTextHint(article, groupInfo);
+            setTextPreview(article, groupInfo);
+            setMobileListOpen(false);
           }
         },
         () => {
           selectedMappedArticleId = article.id;
           renderMappedList();
-          const regionInfo = getNextRegionForArticle(article);
-          if (regionInfo.region) {
-            activeFocusRegion = regionInfo.region;
+          const groupInfo = getFocusGroupForArticle(article);
+          if (groupInfo.focusRegion) {
+            activeFocusRegion = groupInfo.focusRegion;
+            activeFocusRegions = groupInfo.regions;
             isMagnetFocusEnabled = true;
-            readabilityZoomToRegion(regionInfo.region);
-            setArticleTextHint(article, regionInfo);
-            setTextPreview(article, regionInfo);
+            readabilityZoomToRegion(groupInfo.focusRegion);
+            setArticleTextHint(article, groupInfo);
+            setTextPreview(article, groupInfo);
+            setMobileListOpen(false);
           }
         }
       );
@@ -744,80 +1019,23 @@
     });
   }
 
-  async function buildPdfIndex() {
-    if (!pdfDocument) {
-      pdfTextIndex = [];
-      return;
-    }
-
-    const pages = [];
-
-    for (let pageNumber = 1; pageNumber <= pdfDocument.numPages; pageNumber += 1) {
-      const page = await pdfDocument.getPage(pageNumber);
-      const textContent = await page.getTextContent();
-      const fullText = textContent.items.map((item) => item.str).join(' ');
-      pages.push({ page: pageNumber, text: normalizeText(fullText) });
-    }
-
-    pdfTextIndex = pages;
-  }
-
-  function searchInPdf(rawQuery) {
-    const query = normalizeText(rawQuery);
-    if (!query) {
-      if (searchResult) {
-        searchResult.textContent = 'Inserisci un titolo o una porzione di titolo.';
-      }
-      return;
-    }
-
-    const mapped = mappings.find((item) => item.titleNormalized.includes(query));
-    if (mapped) {
-      const firstRegion = sortRegions(mapped.regions)[0];
-      if (firstRegion) {
-        selectedMappedArticleId = mapped.id;
-        activeFocusRegion = firstRegion;
-        isMagnetFocusEnabled = true;
-        renderMappedList();
-        cinematicZoomToRegion(firstRegion);
-        const regionInfo = { index: 1, total: mapped.regions.length };
-        setArticleTextHint(mapped, regionInfo);
-        setTextPreview(mapped, regionInfo);
-      }
-      return;
-    }
-
-    const found = pdfTextIndex.find((entry) => entry.text.includes(query));
-    if (!found) {
-      if (searchResult) {
-        searchResult.textContent = 'Nessuna corrispondenza trovata nel PDF.';
-      }
-      return;
-    }
-
-    currentPage = found.page;
-    zoomScaleFactor = 1;
-    activeFocusRegion = null;
-    isMagnetFocusEnabled = false;
-    renderPdf();
-    if (searchResult) {
-      searchResult.textContent = `Titolo trovato nel PDF a pagina ${found.page}.`;
-    }
-  }
-
   async function loadPdfForEdition() {
     if (!selectedEdition?.pdfPath) {
       pdfDocument = null;
       maxPage = 1;
       setPdfHint('PDF non configurato per questa edizione.', true);
       minimap?.classList.add('is-hidden');
+      setPdfLoadingState(false);
       return;
     }
+
+    setPdfLoadingState(true, 'Caricamento PDF...');
 
     const hasPdfJs = await ensurePdfJsLoaded();
     if (!hasPdfJs || !window.pdfjsLib) {
       setPdfHint('PDF.js non disponibile: CDN non raggiungibili.', true);
       minimap?.classList.add('is-hidden');
+      setPdfLoadingState(false);
       return;
     }
 
@@ -826,16 +1044,19 @@
     const path = selectedEdition.pdfPath;
 
     try {
+      setPdfLoadingState(true, 'Verifica risorsa PDF...');
       const head = await fetch(path, { method: 'HEAD', cache: 'no-store' });
       if (!head.ok) {
         throw new Error('PDF non trovato');
       }
 
+      setPdfLoadingState(true, 'Rendering pagina...');
       pdfDocument = await window.pdfjsLib.getDocument(path).promise;
       maxPage = pdfDocument.numPages;
       currentPage = 1;
       zoomScaleFactor = 1;
       activeFocusRegion = null;
+      activeFocusRegions = [];
       isMagnetFocusEnabled = false;
       fitMode = 'page';
       pageCache.clear();
@@ -846,12 +1067,13 @@
 
       setPdfHint(`PDF collegato: ${path}`);
       await renderPdf();
-      await buildPdfIndex();
+      setPdfLoadingState(false);
     } catch (error) {
       pdfDocument = null;
       maxPage = 1;
       setPdfHint(`Errore caricamento PDF: ${error?.message || 'sconosciuto'}.`, true);
       minimap?.classList.add('is-hidden');
+      setPdfLoadingState(false);
       if (stage) {
         stage.classList.add('is-hidden');
       }
@@ -878,11 +1100,18 @@
         editionSelect.value = selectedEditionId;
       }
 
+      updateEditionMeta();
+
       setEditionStatus(`Edizione attiva: ${selectedEdition.name}`);
 
       mappings = await window.OrDataStore.listMappingsByEdition(editionId);
+      try {
+        rssItems = await window.OrDataStore.listRssItemsByEdition(editionId);
+      } catch (error) {
+        rssItems = [];
+      }
       selectedMappedArticleId = '';
-      articleRegionCursor.clear();
+      activeFocusRegions = [];
       setTextPreview(null);
 
       renderMappedList();
@@ -926,6 +1155,7 @@
     if (target === 1) {
       isMagnetFocusEnabled = false;
       activeFocusRegion = null;
+      activeFocusRegions = [];
     }
     animateZoomTo(target, null, 220);
   });
@@ -938,6 +1168,7 @@
     zoomScaleFactor = 1;
     isMagnetFocusEnabled = false;
     activeFocusRegion = null;
+    activeFocusRegions = [];
     renderPdf();
   });
 
@@ -989,6 +1220,20 @@
     });
   });
 
+  mobileListToggle?.addEventListener('click', () => {
+    const isOpen = !document.body.classList.contains('or-mobile-list-collapsed');
+    setMobileListOpen(!isOpen);
+  });
+
+  mobileListClose?.addEventListener('click', () => {
+    const isOpen = !document.body.classList.contains('or-mobile-list-collapsed');
+    setMobileListOpen(!isOpen);
+  });
+
+  mobileListBackdrop?.addEventListener('click', () => {
+    setMobileListOpen(false);
+  });
+
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Shift') {
       isMagnetBypassActive = true;
@@ -1003,15 +1248,14 @@
   });
 
   window.addEventListener('resize', () => {
+    if (!isMobileLayout()) {
+      setMobileListOpen(false);
+    }
+
     if (!pdfDocument || isZoomAnimating) {
       return;
     }
     renderPdf();
-  });
-
-  searchForm?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    searchInPdf(searchInput?.value || '');
   });
 
   editionSelect?.addEventListener('change', () => {
@@ -1038,6 +1282,10 @@
       }
 
       await loadEditionData(selectedEditionId);
+
+      if (isMobileLayout()) {
+        setMobileListOpen(false);
+      }
     } catch (error) {
       setEditionStatus(`Errore bootstrap: ${error?.message || 'sconosciuto'}.`, true);
     } finally {

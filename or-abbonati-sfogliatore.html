@@ -19,17 +19,13 @@
             <a href="admin-mapper.html" class="or-reader-toolbar__link">Admin</a>
             <label for="or-edition-select">Edizione</label>
             <select id="or-edition-select"></select>
+            <div class="or-reader-edition-meta" aria-label="Dati edizione attiva">
+              <span id="or-edition-number" class="or-reader-edition-meta__number">Edizione --</span>
+              <time id="or-edition-date" class="or-reader-edition-meta__date">--</time>
+            </div>
           </div>
           <div class="or-reader-toolbar__right">
-            <form class="or-viewer__search" id="or-search-form" aria-label="Ricerca titolo nel PDF">
-              <input
-                type="search"
-                id="or-search-title"
-                placeholder="Trova titolo"
-                aria-label="Titolo da cercare"
-              />
-              <button type="submit" id="or-search-button">Trova</button>
-            </form>
+            <button type="button" id="or-mobile-list-toggle" class="or-reader-toolbar__btn or-reader-toolbar__btn--mobile" aria-controls="or-reader-titles-panel" aria-expanded="false">Apri titoli</button>
             <button type="button" id="or-fit-toggle" class="or-reader-toolbar__btn" aria-label="Cambia modalita adattamento">Fit pagina</button>
             <button type="button" id="or-zoom-toggle" class="or-reader-toolbar__btn" aria-label="Cambia zoom">Zoom</button>
             <p id="or-viewer-label">Edizione - Pagina 1</p>
@@ -37,8 +33,11 @@
         </header>
 
         <section class="or-reader-split" aria-label="Lettore PDF per titoli mappati">
-          <aside class="or-reader-titles" aria-label="Titoli disponibili">
-            <h2 class="or-reader-titles__title">Titoli</h2>
+          <aside id="or-reader-titles-panel" class="or-reader-titles" aria-label="Titoli disponibili">
+            <div class="or-reader-titles__head">
+              <h2 class="or-reader-titles__title">Titoli</h2>
+              <button type="button" id="or-mobile-list-close" class="or-reader-titles__close" aria-label="Chiudi elenco titoli">Chiudi titoli</button>
+            </div>
             <p id="or-edition-status" class="or-viewer__hint">Caricamento edizioni da SQLite...</p>
             <p id="or-mapped-status" class="or-viewer__hint">In attesa mappature salvate da area admin.</p>
             <ul id="or-mapped-titles-list" class="or-rss-linker__list"></ul>
@@ -59,6 +58,11 @@
 
           <article class="or-reader-paper" aria-label="Lettore PDF giornale">
             <div class="or-viewer__paper">
+              <div id="or-pdf-loader" class="or-pdf-loader is-hidden" role="status" aria-live="polite" aria-label="Caricamento PDF in corso">
+                <span class="or-pdf-loader__spinner" aria-hidden="true"></span>
+                <p id="or-pdf-loader-text" class="or-pdf-loader__text">Caricamento PDF...</p>
+              </div>
+
               <div id="or-pdf-stage" class="or-pdf-stage is-hidden">
                 <canvas id="or-pdf-canvas" class="or-pdf" aria-label="Sfogliatore PDF Osservatore Romano"></canvas>
                 <div id="or-pdf-highlight-layer" class="or-pdf-highlight-layer" aria-hidden="true"></div>
@@ -76,6 +80,7 @@
             </div>
           </article>
         </section>
+        <div id="or-mobile-list-backdrop" class="or-mobile-list-backdrop" aria-hidden="true"></div>
       </main>
     </div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js"></script>

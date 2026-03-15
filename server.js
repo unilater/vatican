@@ -114,11 +114,22 @@ function mapRssRow(row) {
     editionId: row.edition_id,
     title: row.title,
     titleNormalized: row.title_normalized,
+    description: row.description || '',
     link: row.link || '',
     pubDate: row.pub_date || '',
     createdAt: row.created_at,
     updatedAt: row.updated_at
   };
+}
+
+async function ensureColumnExists(tableName, columnName, columnDefinition) {
+  const columns = await all(`PRAGMA table_info(${tableName})`);
+  const hasColumn = columns.some((column) => column.name === columnName);
+  if (hasColumn) {
+    return;
+  }
+
+  await run(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition}`);
 }
 
 async function initSchema() {
@@ -158,6 +169,7 @@ async function initSchema() {
       edition_id TEXT NOT NULL,
       title TEXT NOT NULL,
       title_normalized TEXT NOT NULL,
+      description TEXT,
       link TEXT,
       pub_date TEXT,
       created_at TEXT NOT NULL,
@@ -170,6 +182,8 @@ async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_rss_edition
     ON rss_items (edition_id)
   `);
+
+  await ensureColumnExists('rss_items', 'description', 'TEXT');
 }
 
 async function initDefaults() {
@@ -410,11 +424,12 @@ app.put('/api/editions/:id/rss', async (req, res) => {
       const id = `${editionId}::${titleNormalized}`;
 
       await run(
-        `INSERT INTO rss_items (id, edition_id, title, title_normalized, link, pub_date, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `INSERT INTO rss_items (id, edition_id, title, title_normalized, description, link, pub_date, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON CONFLICT(id) DO UPDATE SET
            title = excluded.title,
            title_normalized = excluded.title_normalized,
+           description = excluded.description,
            link = excluded.link,
            pub_date = excluded.pub_date,
            updated_at = excluded.updated_at`,
@@ -423,6 +438,7 @@ app.put('/api/editions/:id/rss', async (req, res) => {
           editionId,
           title,
           titleNormalized,
+          String(item.description || '').trim(),
           String(item.link || '').trim(),
           String(item.pubDate || '').trim(),
           now,

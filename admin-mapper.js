@@ -83,6 +83,19 @@
       .trim();
   }
 
+  function stripHtml(value) {
+    const html = String(value || '');
+    if (!html) {
+      return '';
+    }
+
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function createId(prefix) {
     return window.crypto?.randomUUID ? window.crypto.randomUUID() : `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   }
@@ -760,7 +773,12 @@
     return Array.from(xmlDoc.querySelectorAll('item'))
       .slice(0, 120)
       .map((item) => ({
-        title: (item.querySelector('title')?.textContent || '').replace(/\s+/g, ' ').trim(),
+        title: stripHtml(item.querySelector('title')?.textContent || ''),
+        description: stripHtml(
+          item.querySelector('description')?.textContent
+          || item.querySelector('content\\:encoded')?.textContent
+          || ''
+        ),
         link: (item.querySelector('link')?.textContent || '').trim(),
         pubDate: (item.querySelector('pubDate')?.textContent || '').trim()
       }))
