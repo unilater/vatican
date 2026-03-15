@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Mappa Titoli PDF | L'Osservatore Romano</title>
+    <meta
+      name="description"
+      content="Area amministrativa per mappare i titoli articolo a rettangoli nel PDF dello sfogliatore."
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="or-private-page or-admin-page">
+    <div class="site-shell or-private-shell">
+      <header class="topbar">
+        <div class="topbar__inner">
+          <p class="topbar__label">L'Osservatore Romano - Area Admin Mapping (prototipo)</p>
+          <div class="topbar__menus">
+            <nav class="topbar__nav" aria-label="Navigazione area amministrativa">
+              <a href="index.html#or-section">Home</a>
+              <a href="or-abbonati-sfogliatore.html">Sfogliatore</a>
+              <a href="#or-admin-tools">Strumenti</a>
+            </nav>
+          </div>
+        </div>
+      </header>
+
+      <main class="or-private-layout or-admin-layout" id="or-admin-tools">
+        <section class="or-private-intro or-admin-intro">
+          <p class="or-private-intro__tag">Area amministrativa</p>
+          <h1>Mappatura PDF per edizione</h1>
+          <p>
+            Seleziona l'edizione, importa i titoli RSS nel database locale, disegna i rettangoli sul PDF e salva.
+            Tutti i dati sono persistiti in IndexedDB e separati per edizione.
+          </p>
+        </section>
+
+        <section class="or-admin-grid" aria-label="Editor mappatura PDF">
+          <aside class="or-admin-panel">
+            <div class="or-admin-card">
+              <h2>Edizione</h2>
+              <label for="or-admin-edition-select">Seleziona edizione</label>
+              <select id="or-admin-edition-select"></select>
+              <p id="or-admin-edition-status" class="or-viewer__hint">Caricamento edizioni dal database locale...</p>
+            </div>
+
+            <div class="or-admin-card">
+              <h2>Sorgente PDF</h2>
+              <label for="or-admin-pdf-path">Percorso PDF</label>
+              <div class="or-admin-inline">
+                <input id="or-admin-pdf-path" type="text" value="assets/osservatore-edizione2.pdf" />
+                <button type="button" id="or-admin-pdf-load">Apri</button>
+              </div>
+              <p id="or-admin-pdf-status" class="or-viewer__hint">In attesa caricamento PDF.</p>
+            </div>
+
+            <div class="or-admin-card">
+              <h2>Navigazione pagina</h2>
+              <div class="or-admin-inline">
+                <button type="button" id="or-admin-prev">◀</button>
+                <input id="or-admin-page" type="number" min="1" value="1" />
+                <button type="button" id="or-admin-next">▶</button>
+              </div>
+              <div class="or-admin-zoom-row" aria-label="Controlli zoom PDF">
+                <button type="button" id="or-admin-zoom-out">-</button>
+                <input id="or-admin-zoom" type="range" min="40" max="160" step="5" value="80" />
+                <button type="button" id="or-admin-zoom-in">+</button>
+                <span id="or-admin-zoom-value" class="or-admin-zoom-value">80%</span>
+              </div>
+              <p id="or-admin-page-status" class="or-viewer__hint">Pagina 1 / -</p>
+            </div>
+
+            <div class="or-admin-card">
+              <h2>Collegamento articolo</h2>
+              <div class="or-admin-rss-head">
+                <label for="or-admin-rss-select">Titoli RSS nel DB locale</label>
+                <button type="button" id="or-admin-rss-load">Importa RSS</button>
+              </div>
+              <select id="or-admin-rss-select">
+                <option value="">Seleziona un titolo dal feed...</option>
+              </select>
+              <p id="or-admin-rss-status" class="or-viewer__hint">Nessun titolo RSS in cache per questa edizione.</p>
+              <label for="or-admin-title">Titolo articolo</label>
+              <input id="or-admin-title" type="text" placeholder="Titolo da associare" />
+              <label for="or-admin-url">URL articolo (opzionale)</label>
+              <input id="or-admin-url" type="text" placeholder="article-magistero.html" />
+              <p class="or-viewer__hint">Disegna il rettangolo direttamente sul PDF con drag del mouse.</p>
+              <label class="or-admin-checkline" for="or-admin-edit-selected">
+                <input id="or-admin-edit-selected" type="checkbox" />
+                Modifica box selezionato (se disattivo, Salva aggiunge sempre un nuovo box)
+              </label>
+              <p class="or-viewer__hint">Lo stesso articolo puo avere piu rettangoli (anche su pagine diverse).</p>
+              <div class="or-admin-actions">
+                <button type="button" id="or-admin-save">Salva mappatura</button>
+                <button type="button" id="or-admin-clear-selection" class="or-admin-btn-ghost">Azzera selezione</button>
+              </div>
+              <p id="or-admin-selection" class="or-viewer__hint">Nessun rettangolo selezionato.</p>
+            </div>
+
+            <div class="or-admin-card">
+              <h2>Dataset mappature (edizione corrente)</h2>
+              <div class="or-admin-actions">
+                <button type="button" id="or-admin-export">Esporta JSON</button>
+                <button type="button" id="or-admin-copy">Copia JSON</button>
+              </div>
+              <div class="or-admin-import-row">
+                <label for="or-admin-import-file" class="or-admin-file-label">Importa JSON</label>
+                <input id="or-admin-import-file" type="file" accept="application/json" />
+              </div>
+              <button type="button" id="or-admin-reset" class="or-admin-btn-danger">Cancella tutte le mappature</button>
+              <p id="or-admin-data-status" class="or-viewer__hint">Mappature salvate in IndexedDB.</p>
+            </div>
+          </aside>
+
+          <div class="or-admin-workbench">
+            <div class="or-admin-canvas-shell">
+              <div id="or-admin-canvas-wrap" class="or-admin-canvas-wrap">
+                <canvas id="or-admin-canvas"></canvas>
+                <div id="or-admin-overlay" class="or-admin-overlay"></div>
+              </div>
+            </div>
+
+            <div class="or-admin-card or-admin-list-card">
+              <div class="or-admin-list-head">
+                <h2>Mappature presenti</h2>
+                <span id="or-admin-count" class="or-admin-counter">0</span>
+              </div>
+              <ul id="or-admin-list" class="or-admin-list"></ul>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js"></script>
+    <script src="or-api-store.js"></script>
+    <script src="admin-mapper.js"></script>
+  </body>
+</html>

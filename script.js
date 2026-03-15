@@ -42,9 +42,31 @@ if (liveStatus && liveFeedItems.length > 0) {
   }, 3200);
 }
 
-const orPdfViewer = document.getElementById('or-pdf-viewer');
+const orPdfCanvas = document.getElementById('or-pdf-canvas');
 
-if (orPdfViewer) {
+if (orPdfCanvas) {
+  const orPdfCtx = orPdfCanvas.getContext('2d');
+  const PDFJS_SOURCES = [
+    {
+      lib: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js',
+      worker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js'
+    },
+    {
+      lib: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
+      worker: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
+    },
+    {
+      lib: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js',
+      worker: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+    },
+    {
+      lib: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js',
+      worker: 'https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js'
+    }
+  ];
+  const orPdfStage = document.getElementById('or-pdf-stage');
+  const orPdfHighlightLayer = document.getElementById('or-pdf-highlight-layer');
+  const orPdfHitLayer = document.getElementById('or-pdf-hit-layer');
   const orViewerLabel = document.getElementById('or-viewer-label');
   const orPdfHint = document.getElementById('or-pdf-hint');
   const orSearchResult = document.getElementById('or-search-result');
@@ -58,17 +80,301 @@ if (orPdfViewer) {
   const orNextPage = document.getElementById('or-next-page');
   const orZoomToggle = document.getElementById('or-zoom-toggle');
   const orThumbButtons = document.querySelectorAll('.or-thumb[data-page]');
-  const pdfPath = 'assets/osservatore-edizione.pdf';
+  const orMappedTitlesList = document.getElementById('or-mapped-titles-list');
+  const orMappedStatus = document.getElementById('or-mapped-status');
+  const params = new URLSearchParams(window.location.search);
+  let pdfPath = 'assets/osservatore-edizione.pdf';
+  let pdfPathResolved = false;
+  const pdfCacheBust = Date.now();
   let currentPage = 1;
   let zoomMode = 'page-width';
   let pdfTextIndex = [];
   let hasPdfLoaded = false;
+  let maxPage = orThumbButtons.length || 1;
+  let mappedArticles = [];
+  let selectedMappedArticleId = '';
+  let pdfDocument = null;
+  let renderToken = 0;
+  let pdfWorkerSrc = PDFJS_SOURCES[0].worker;
+
+  const withCacheBust = (path) => {
+    if (!path) {
+      return path;
+    }
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}v=${pdfCacheBust}`;
+  };
+
+  const pathFromMappings = () => {
+    try {
+      const raw = window.localStorage.getItem('orPdfTitleMappings');
+      if (!raw) {
+        return '';
+      }
+      const parsed = JSON.parse(raw);
+      const mappings = Array.isArray(parsed) ? parsed : parsed?.mappings;
+      if (!Array.isArray(mappings) || mappings.length === 0) {
+        return '';
+      }
+      return mappings.find((item) => item?.pdfPath)?.pdfPath || '';
+    } catch (error) {
+      return '';
+    }
+  };
+
+  const resolvePdfPath = async () => {
+    if (pdfPathResolved) {
+      return pdfPath;
+    }
+
+    const fromQuery = (params.get('pdf') || '').trim();
+    const fromMappings = pathFromMappings().trim();
+    const candidates = [
+      fromQuery,
+      fromMappings,
+      'assets/osservatore-edizione.pdf',
+      'assets/osservatore-edizione2.pdf'
+    ].filter(Boolean);
+
+    for (const candidate of candidates) {
+      try {
+        const response = await fetch(withCacheBust(candidate), { method: 'HEAD', cache: 'no-store' });
+        if (response.ok) {
+          pdfPath = candidate;
+          pdfPathResolved = true;
+          return pdfPath;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    pdfPathResolved = true;
+    return pdfPath;
+  };
 
   const normalizeText = (value) =>
     (value || '')
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '');
+
+  const loadScript = (src) =>
+    new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Script non raggiungibile: ${src}`));
+      document.head.appendChild(script);
+    });
+
+  const ensurePdfJsLoaded = async () => {
+    if (window.pdfjsLib) {
+      return true;
+    }
+
+    for (const source of PDFJS_SOURCES) {
+      try {
+        await loadScript(source.lib);
+        if (window.pdfjsLib) {
+          pdfWorkerSrc = source.worker;
+          return true;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return false;
+  };
+
+  const normalizeMappedArticles = () => {
+    try {
+      const raw = window.localStorage.getItem('orPdfTitleMappings');
+      if (!raw) {
+        return [];
+      }
+      const parsed = JSON.parse(raw);
+      const list = Array.isArray(parsed) ? parsed : parsed?.mappings;
+      if (!Array.isArray(list)) {
+        return [];
+      }
+
+      return list
+        .map((entry) => {
+          if (!entry || !entry.title) {
+            return null;
+          }
+
+          const regionsRaw = Array.isArray(entry.regions)
+            ? entry.regions
+            : entry.rect && typeof entry.page === 'number'
+              ? [{ id: `legacy-${entry.id || entry.title}`, page: entry.page, rect: entry.rect }]
+              : [];
+
+          const regions = regionsRaw
+            .filter((region) => region && typeof region.page === 'number' && region.rect)
+            .map((region) => ({
+              id: region.id || `region-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+              page: Number(region.page),
+              rect: {
+                x: Number(region.rect.x || 0),
+                y: Number(region.rect.y || 0),
+                w: Number(region.rect.w || 0),
+                h: Number(region.rect.h || 0)
+              }
+            }))
+            .filter((region) => region.rect.w > 0 && region.rect.h > 0);
+
+          if (regions.length === 0) {
+            return null;
+          }
+
+          return {
+            id: entry.id || `article-${normalizeText(entry.title)}`,
+            title: entry.title,
+            titleNormalized: entry.titleNormalized || normalizeText(entry.title),
+            regions,
+            url: entry.url || ''
+          };
+        })
+        .filter(Boolean);
+    } catch (error) {
+      return [];
+    }
+  };
+
+  const drawMappedHighlights = () => {
+    if (!orPdfHighlightLayer) {
+      return;
+    }
+
+    orPdfHighlightLayer.innerHTML = '';
+
+    if (!selectedMappedArticleId) {
+      return;
+    }
+
+    const selected = mappedArticles.find((item) => item.id === selectedMappedArticleId);
+    if (!selected) {
+      return;
+    }
+
+    selected.regions
+      .filter((region) => region.page === currentPage)
+      .forEach((region) => {
+        const rect = document.createElement('div');
+        rect.className = 'or-pdf-highlight';
+        rect.style.left = `${region.rect.x * 100}%`;
+        rect.style.top = `${region.rect.y * 100}%`;
+        rect.style.width = `${region.rect.w * 100}%`;
+        rect.style.height = `${region.rect.h * 100}%`;
+        orPdfHighlightLayer.appendChild(rect);
+      });
+  };
+
+  const drawPageHitAreas = () => {
+    if (!orPdfHitLayer) {
+      return;
+    }
+
+    orPdfHitLayer.innerHTML = '';
+
+    mappedArticles.forEach((article) => {
+      article.regions
+        .filter((region) => region.page === currentPage)
+        .forEach((region) => {
+          const hit = document.createElement('button');
+          hit.type = 'button';
+          hit.className = 'or-pdf-hit';
+          hit.style.left = `${region.rect.x * 100}%`;
+          hit.style.top = `${region.rect.y * 100}%`;
+          hit.style.width = `${region.rect.w * 100}%`;
+          hit.style.height = `${region.rect.h * 100}%`;
+          hit.title = article.title;
+
+          hit.addEventListener('click', () => {
+            selectMappedArticle(article, false);
+            if (orSearchResult) {
+              orSearchResult.textContent = article.url
+                ? 'Area articolo selezionata. Doppio click sull\'area per aprire l\'articolo.'
+                : 'Area articolo selezionata.';
+            }
+          });
+
+          hit.addEventListener('dblclick', () => {
+            if (article.url) {
+              window.open(article.url, '_blank', 'noopener');
+            }
+          });
+
+          orPdfHitLayer.appendChild(hit);
+        });
+    });
+  };
+
+  const selectMappedArticle = (article, jumpToFirstRegion = true) => {
+    if (!article) {
+      selectedMappedArticleId = '';
+      drawMappedHighlights();
+      return;
+    }
+
+    selectedMappedArticleId = article.id;
+    if (jumpToFirstRegion) {
+      const sortedRegions = article.regions.slice().sort((a, b) => a.page - b.page);
+      const firstRegion = sortedRegions[0];
+      if (firstRegion) {
+        currentPage = Math.min(Math.max(1, firstRegion.page), maxPage);
+      }
+    }
+
+    renderMappedTitles();
+    renderPdf();
+
+    if (orSearchResult) {
+      const onPageCount = article.regions.filter((region) => region.page === currentPage).length;
+      orSearchResult.textContent = `Titolo mappato: evidenziate ${onPageCount} aree a pagina ${currentPage}.`;
+    }
+  };
+
+  const renderMappedTitles = () => {
+    if (!orMappedTitlesList) {
+      return;
+    }
+
+    mappedArticles = normalizeMappedArticles();
+    orMappedTitlesList.innerHTML = '';
+
+    if (mappedArticles.length === 0) {
+      if (orMappedStatus) {
+        orMappedStatus.textContent = 'Nessuna mappatura trovata. Crea aree in admin-mapper e aggiorna questa pagina.';
+      }
+      return;
+    }
+
+    if (orMappedStatus) {
+      orMappedStatus.textContent = `Titoli mappati disponibili: ${mappedArticles.length}.`;
+    }
+
+    mappedArticles.forEach((article) => {
+      const pages = Array.from(new Set(article.regions.map((region) => region.page))).sort((a, b) => a - b);
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'or-rss-linker__item-btn';
+      if (article.id === selectedMappedArticleId) {
+        button.classList.add('is-active');
+      }
+      button.innerHTML = `<span class="or-rss-linker__item-title">${article.title}</span><small>Aree: ${article.regions.length} · Pagine: ${pages.join(', ')}</small>`;
+      button.addEventListener('click', () => {
+        selectMappedArticle(article, true);
+      });
+      li.appendChild(button);
+      orMappedTitlesList.appendChild(li);
+    });
+  };
 
   const setActiveThumb = () => {
     orThumbButtons.forEach((button) => {
@@ -108,12 +414,52 @@ if (orPdfViewer) {
     return true;
   };
 
-  const renderPdf = () => {
-    orPdfViewer.src = `${pdfPath}#page=${currentPage}&zoom=${zoomMode}`;
+  const renderPdf = async () => {
+    if (!pdfDocument || !orPdfCtx) {
+      return;
+    }
+
+    currentPage = Math.min(Math.max(1, currentPage), maxPage);
+
+    const token = renderToken + 1;
+    renderToken = token;
+
+    const page = await pdfDocument.getPage(currentPage);
+    const baseViewport = page.getViewport({ scale: 1 });
+    const stageWidth = Math.max(640, (orPdfStage?.clientWidth || 980) - 2);
+    const fitScale = stageWidth / baseViewport.width;
+    const zoomScale = zoomMode === '120' ? 1.2 : 1;
+    const viewport = page.getViewport({ scale: fitScale * zoomScale });
+
+    if (token !== renderToken) {
+      return;
+    }
+
+    orPdfCanvas.width = Math.floor(viewport.width);
+    orPdfCanvas.height = Math.floor(viewport.height);
+
+    if (orPdfHighlightLayer) {
+      orPdfHighlightLayer.style.width = `${orPdfCanvas.width}px`;
+      orPdfHighlightLayer.style.height = `${orPdfCanvas.height}px`;
+    }
+    if (orPdfHitLayer) {
+      orPdfHitLayer.style.width = `${orPdfCanvas.width}px`;
+      orPdfHitLayer.style.height = `${orPdfCanvas.height}px`;
+    }
+
+    await page.render({ canvasContext: orPdfCtx, viewport }).promise;
+
+    if (token !== renderToken) {
+      return;
+    }
+
     if (orViewerLabel) {
-      orViewerLabel.textContent = `Edizione 13 marzo 2026 · Anno CLXVI · N. 60 · Pagina ${currentPage}`;
+      const fileName = pdfPath.split('/').pop() || pdfPath;
+      orViewerLabel.textContent = `Edizione 13 marzo 2026 · Anno CLXVI · N. 60 · ${fileName} · Pagina ${currentPage}`;
     }
     setActiveThumb();
+    drawMappedHighlights();
+    drawPageHitAreas();
   };
 
   const buildPdfIndex = async () => {
@@ -124,16 +470,16 @@ if (orPdfViewer) {
       return;
     }
 
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.js';
+    if (!pdfDocument) {
+      return;
+    }
 
-    const loadingTask = window.pdfjsLib.getDocument(pdfPath);
-    const pdf = await loadingTask.promise;
-    const maxPage = Math.min(pdf.numPages, orThumbButtons.length || pdf.numPages);
+    maxPage = pdfDocument.numPages;
+    const maxPageForIndex = pdfDocument.numPages;
     const pages = [];
 
-    for (let pageNumber = 1; pageNumber <= maxPage; pageNumber += 1) {
-      const page = await pdf.getPage(pageNumber);
+    for (let pageNumber = 1; pageNumber <= maxPageForIndex; pageNumber += 1) {
+      const page = await pdfDocument.getPage(pageNumber);
       const textContent = await page.getTextContent();
       const fullText = textContent.items.map((item) => item.str).join(' ');
       pages.push({ page: pageNumber, text: normalizeText(fullText) });
@@ -144,8 +490,6 @@ if (orPdfViewer) {
       orSearchResult.textContent = 'Ricerca titolo pronta.';
     }
   };
-
-  const maxPage = orThumbButtons.length || 1;
 
   orPrevPage?.addEventListener('click', () => {
     currentPage = currentPage <= 1 ? 1 : currentPage - 1;
@@ -169,22 +513,36 @@ if (orPdfViewer) {
     });
   });
 
-  fetch(pdfPath, { method: 'HEAD' })
+  resolvePdfPath()
+    .then(async (resolvedPath) => {
+      const hasPdfJs = await ensurePdfJsLoaded();
+      if (!hasPdfJs) {
+        throw new Error('PDF.js non disponibile (CDN non raggiungibili)');
+      }
+      return resolvedPath;
+    })
+    .then((resolvedPath) => fetch(withCacheBust(resolvedPath), { method: 'HEAD', cache: 'no-store' }))
     .then((response) => {
       if (!response.ok) {
         throw new Error('PDF non trovato');
       }
 
-      hasPdfLoaded = true;
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
-      orPdfViewer.classList.remove('is-hidden');
+      return window.pdfjsLib.getDocument(withCacheBust(pdfPath)).promise;
+    })
+    .then((pdf) => {
+      hasPdfLoaded = true;
+      pdfDocument = pdf;
+      maxPage = pdf.numPages;
+
+      orPdfStage?.classList.remove('is-hidden');
       orViewerFallback?.classList.add('is-hidden');
       if (orPdfHint) {
-        orPdfHint.textContent = 'PDF collegato: usa miniature, frecce e zoom per il test.';
+        orPdfHint.textContent = `PDF collegato (${pdfPath}): usa miniature, frecce e zoom per il test.`;
       }
-      renderPdf();
-      return buildPdfIndex().then(() => {
-        const params = new URLSearchParams(window.location.search);
+      renderMappedTitles();
+      return renderPdf().then(() => buildPdfIndex()).then(() => {
         const queryFromUrl = params.get('q') || params.get('title');
         if (queryFromUrl) {
           if (orSearchInput) {
@@ -194,9 +552,11 @@ if (orPdfViewer) {
         }
       });
     })
-    .catch(() => {
+    .catch((error) => {
+      orPdfStage?.classList.add('is-hidden');
+      pdfDocument = null;
       if (orPdfHint) {
-        orPdfHint.textContent = 'PDF non presente. Carica assets/osservatore-edizione.pdf per testare lo sfogliatore reale.';
+        orPdfHint.textContent = `Errore caricamento PDF: ${error?.message || 'sconosciuto'}.`;
       }
       if (orSearchResult) {
         orSearchResult.textContent = '';
@@ -242,6 +602,14 @@ if (orPdfViewer) {
       button.addEventListener('click', () => {
         if (orSearchInput) {
           orSearchInput.value = title;
+        }
+        const mapped = mappedArticles.find((article) => article.titleNormalized.includes(normalizeText(title)));
+        if (mapped) {
+          selectMappedArticle(mapped, true);
+          if (orRssStatus) {
+            orRssStatus.textContent = 'Titolo RSS agganciato alle aree mappate nel PDF.';
+          }
+          return;
         }
         const found = searchInPdf(title);
         if (orRssStatus) {
