@@ -42,6 +42,19 @@
             <p id="or-edition-status" class="or-viewer__hint">Caricamento edizioni da SQLite...</p>
             <p id="or-mapped-status" class="or-viewer__hint">In attesa mappature salvate da area admin.</p>
             <ul id="or-mapped-titles-list" class="or-rss-linker__list"></ul>
+
+            <section class="or-reader-text-preview" aria-label="Anteprima testuale articolo">
+              <h3>Versione testuale</h3>
+              <p id="or-text-preview-lead" class="or-reader-text-preview__lead">
+                Seleziona un titolo per aprire il focus e vedere l'anteprima.
+              </p>
+              <p id="or-text-preview-body" class="or-reader-text-preview__body">
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+              </p>
+              <a id="or-text-preview-link" class="or-inline-article-link" href="#" target="_blank" rel="noopener" hidden>
+                Apri articolo completo
+              </a>
+            </section>
           </aside>
 
           <article class="or-reader-paper" aria-label="Lettore PDF giornale">
@@ -54,6 +67,12 @@
 
               <p id="or-pdf-hint" class="or-viewer__hint">In attesa PDF per edizione selezionata.</p>
               <p id="or-search-result" class="or-viewer__hint"></p>
+
+              <aside id="or-minimap" class="or-reader-minimap" aria-label="Mini mappa pagina">
+                <canvas id="or-minimap-canvas" width="180" height="230"></canvas>
+                <div id="or-minimap-viewport" class="or-reader-minimap__viewport" aria-hidden="true"></div>
+                <p id="or-minimap-label" class="or-reader-minimap__label">Pagina --</p>
+              </aside>
             </div>
           </article>
         </section>

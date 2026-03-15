@@ -20,6 +20,13 @@
   const editionStatus = document.getElementById('or-edition-status');
   const mappedList = document.getElementById('or-mapped-titles-list');
   const mappedStatus = document.getElementById('or-mapped-status');
+  const textPreviewLead = document.getElementById('or-text-preview-lead');
+  const textPreviewBody = document.getElementById('or-text-preview-body');
+  const textPreviewLink = document.getElementById('or-text-preview-link');
+  const minimap = document.getElementById('or-minimap');
+  const minimapCanvas = document.getElementById('or-minimap-canvas');
+  const minimapViewport = document.getElementById('or-minimap-viewport');
+  const minimapLabel = document.getElementById('or-minimap-label');
 
   const PDFJS_SOURCES = [
     {
@@ -57,6 +64,13 @@
   let isApplyingMagnetScroll = false;
   let isMagnetBypassActive = false;
   const pageCache = new Map();
+  const articleRegionCursor = new Map();
+
+  const LOREM_IPSUM_PREVIEW = [
+    'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+    'Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.',
+    'Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.'
+  ].join(' ');
 
   function normalizeText(value) {
     return (value || '')
@@ -210,17 +224,130 @@
     highlightLayer.appendChild(box);
   }
 
-  function setArticleTextHint(article) {
+  function sortRegions(regions) {
+    return regions.slice().sort((a, b) => {
+      if (a.page !== b.page) {
+        return a.page - b.page;
+      }
+      if (a.rect.y !== b.rect.y) {
+        return a.rect.y - b.rect.y;
+      }
+      if (a.rect.x !== b.rect.x) {
+        return a.rect.x - b.rect.x;
+      }
+      return b.rect.w - a.rect.w;
+    });
+  }
+
+  function getArticleCursorKey(article) {
+    return article?.id || `${article?.title || 'untitled'}::${selectedEditionId || 'edition'}`;
+  }
+
+  function getNextRegionForArticle(article) {
+    const ordered = sortRegions(article.regions || []);
+    if (ordered.length === 0) {
+      return { region: null, index: 0, total: 0 };
+    }
+
+    const key = getArticleCursorKey(article);
+    const cursor = articleRegionCursor.get(key) || 0;
+    const nextIndex = cursor % ordered.length;
+    articleRegionCursor.set(key, cursor + 1);
+
+    return {
+      region: ordered[nextIndex],
+      index: nextIndex + 1,
+      total: ordered.length
+    };
+  }
+
+  function setTextPreview(article, regionInfo = null) {
+    if (textPreviewLead) {
+      if (!article) {
+        textPreviewLead.textContent = 'Seleziona un titolo per aprire il focus e vedere l\'anteprima.';
+      } else {
+        const suffix = regionInfo && regionInfo.total > 1
+          ? `Area ${regionInfo.index}/${regionInfo.total}`
+          : 'Area selezionata';
+        textPreviewLead.textContent = `${article.title} - ${suffix}`;
+      }
+    }
+
+    if (textPreviewBody) {
+      textPreviewBody.textContent = LOREM_IPSUM_PREVIEW;
+      textPreviewBody.classList.remove('is-refresh');
+      window.requestAnimationFrame(() => {
+        textPreviewBody.classList.add('is-refresh');
+      });
+    }
+
+    if (textPreviewLink) {
+      if (article?.url) {
+        textPreviewLink.href = article.url;
+        textPreviewLink.hidden = false;
+      } else {
+        textPreviewLink.href = '#';
+        textPreviewLink.hidden = true;
+      }
+    }
+  }
+
+  function setArticleTextHint(article, regionInfo = null) {
     if (!searchResult) {
       return;
     }
 
     if (article?.url) {
-      searchResult.innerHTML = `Area selezionata. <a class="or-inline-article-link" href="${article.url}" target="_blank" rel="noopener">Apri versione testuale</a>.`;
+      const suffix = regionInfo && regionInfo.total > 1
+        ? `Area ${regionInfo.index}/${regionInfo.total}. `
+        : 'Area selezionata. ';
+      searchResult.innerHTML = `${suffix}<a class="or-inline-article-link" href="${article.url}" target="_blank" rel="noopener">Apri versione testuale</a>.`;
       return;
     }
 
     searchResult.textContent = 'Area selezionata. Versione testuale non disponibile.';
+  }
+
+  function updateMinimap() {
+    if (!minimap || !minimapCanvas || !stage || !canvas || !minimapViewport) {
+      return;
+    }
+
+    if (!pdfDocument || canvas.clientWidth <= 0 || canvas.clientHeight <= 0) {
+      minimap.classList.add('is-hidden');
+      return;
+    }
+
+    minimap.classList.remove('is-hidden');
+
+    const miniCtx = minimapCanvas.getContext('2d');
+    if (!miniCtx) {
+      return;
+    }
+
+    const miniWidth = minimapCanvas.width;
+    const miniHeight = minimapCanvas.height;
+
+    miniCtx.clearRect(0, 0, miniWidth, miniHeight);
+    miniCtx.fillStyle = '#eef2f8';
+    miniCtx.fillRect(0, 0, miniWidth, miniHeight);
+    miniCtx.drawImage(canvas, 0, 0, miniWidth, miniHeight);
+
+    const contentW = canvas.clientWidth;
+    const contentH = canvas.clientHeight;
+    const viewportX = (stage.scrollLeft / contentW) * miniWidth;
+    const viewportY = (stage.scrollTop / contentH) * miniHeight;
+    const viewportW = Math.max(12, (stage.clientWidth / contentW) * miniWidth);
+    const viewportH = Math.max(12, (stage.clientHeight / contentH) * miniHeight);
+
+    minimapViewport.style.left = `${viewportX}px`;
+    minimapViewport.style.top = `${viewportY}px`;
+    minimapViewport.style.width = `${viewportW}px`;
+    minimapViewport.style.height = `${viewportH}px`;
+
+    if (minimapLabel) {
+      minimapLabel.textContent = `Pagina ${currentPage}/${maxPage}`;
+    }
   }
 
   function scrollToRegion(region) {
@@ -309,9 +436,26 @@
     hitLayer.innerHTML = '';
 
     mappings.forEach((article) => {
+      const orderedRegions = sortRegions(article.regions || []);
+
       article.regions
         .filter((region) => region.page === currentPage)
         .forEach((region) => {
+          const regionIndex = orderedRegions.findIndex((item) => (
+            (item.id && region.id && item.id === region.id)
+            || (
+              item.page === region.page
+              && item.rect.x === region.rect.x
+              && item.rect.y === region.rect.y
+              && item.rect.w === region.rect.w
+              && item.rect.h === region.rect.h
+            )
+          ));
+          const regionInfo = {
+            index: regionIndex >= 0 ? regionIndex + 1 : 1,
+            total: orderedRegions.length
+          };
+
           const hit = document.createElement('button');
           hit.type = 'button';
           hit.className = 'or-pdf-hit';
@@ -331,7 +475,8 @@
               isMagnetFocusEnabled = true;
               renderMappedList();
               cinematicZoomToRegion(region);
-              setArticleTextHint(article);
+              setArticleTextHint(article, regionInfo);
+              setTextPreview(article, regionInfo);
             },
             () => {
               selectedMappedArticleId = article.id;
@@ -339,12 +484,8 @@
               isMagnetFocusEnabled = true;
               renderMappedList();
               readabilityZoomToRegion(region);
-
-              if (searchResult) {
-                searchResult.textContent = article.url
-                  ? 'Modalita lettura attiva. Usa il link sotto per aprire la versione testuale.'
-                  : 'Modalita lettura attiva su area selezionata.';
-              }
+              setArticleTextHint(article, regionInfo);
+              setTextPreview(article, regionInfo);
             }
           );
 
@@ -362,6 +503,8 @@
 
     const token = renderToken + 1;
     renderToken = token;
+
+    stage?.classList.add('is-rendering');
 
     const page = await pdfDocument.getPage(currentPage);
     const baseViewport = page.getViewport({ scale: 1 });
@@ -414,6 +557,7 @@
 
     drawMappedHighlights();
     drawPageHitAreas();
+    updateMinimap();
 
     if (focusRegion && focusRegion.page === currentPage) {
       window.requestAnimationFrame(() => {
@@ -437,6 +581,10 @@
         // Ignora errori di prefetch.
       });
     }
+
+    window.setTimeout(() => {
+      stage?.classList.remove('is-rendering');
+    }, 140);
   }
 
   async function cinematicZoomToRegion(region) {
@@ -569,23 +717,25 @@
         () => {
           selectedMappedArticleId = article.id;
           renderMappedList();
-          const firstRegion = article.regions.slice().sort((a, b) => a.page - b.page)[0];
-          if (firstRegion) {
-            activeFocusRegion = firstRegion;
+          const regionInfo = getNextRegionForArticle(article);
+          if (regionInfo.region) {
+            activeFocusRegion = regionInfo.region;
             isMagnetFocusEnabled = true;
-            cinematicZoomToRegion(firstRegion);
-            setArticleTextHint(article);
+            cinematicZoomToRegion(regionInfo.region);
+            setArticleTextHint(article, regionInfo);
+            setTextPreview(article, regionInfo);
           }
         },
         () => {
           selectedMappedArticleId = article.id;
           renderMappedList();
-          const firstRegion = article.regions.slice().sort((a, b) => a.page - b.page)[0];
-          if (firstRegion) {
-            activeFocusRegion = firstRegion;
+          const regionInfo = getNextRegionForArticle(article);
+          if (regionInfo.region) {
+            activeFocusRegion = regionInfo.region;
             isMagnetFocusEnabled = true;
-            readabilityZoomToRegion(firstRegion);
-            setArticleTextHint(article);
+            readabilityZoomToRegion(regionInfo.region);
+            setArticleTextHint(article, regionInfo);
+            setTextPreview(article, regionInfo);
           }
         }
       );
@@ -623,14 +773,16 @@
 
     const mapped = mappings.find((item) => item.titleNormalized.includes(query));
     if (mapped) {
-      const firstRegion = mapped.regions.slice().sort((a, b) => a.page - b.page)[0];
+      const firstRegion = sortRegions(mapped.regions)[0];
       if (firstRegion) {
         selectedMappedArticleId = mapped.id;
         activeFocusRegion = firstRegion;
         isMagnetFocusEnabled = true;
         renderMappedList();
         cinematicZoomToRegion(firstRegion);
-        setArticleTextHint(mapped);
+        const regionInfo = { index: 1, total: mapped.regions.length };
+        setArticleTextHint(mapped, regionInfo);
+        setTextPreview(mapped, regionInfo);
       }
       return;
     }
@@ -658,12 +810,14 @@
       pdfDocument = null;
       maxPage = 1;
       setPdfHint('PDF non configurato per questa edizione.', true);
+      minimap?.classList.add('is-hidden');
       return;
     }
 
     const hasPdfJs = await ensurePdfJsLoaded();
     if (!hasPdfJs || !window.pdfjsLib) {
       setPdfHint('PDF.js non disponibile: CDN non raggiungibili.', true);
+      minimap?.classList.add('is-hidden');
       return;
     }
 
@@ -697,6 +851,7 @@
       pdfDocument = null;
       maxPage = 1;
       setPdfHint(`Errore caricamento PDF: ${error?.message || 'sconosciuto'}.`, true);
+      minimap?.classList.add('is-hidden');
       if (stage) {
         stage.classList.add('is-hidden');
       }
@@ -727,6 +882,8 @@
 
       mappings = await window.OrDataStore.listMappingsByEdition(editionId);
       selectedMappedArticleId = '';
+      articleRegionCursor.clear();
+      setTextPreview(null);
 
       renderMappedList();
       await loadPdfForEdition();
@@ -801,9 +958,35 @@
 
   stage?.addEventListener('scroll', () => {
     if (isApplyingMagnetScroll || isZoomAnimating || !isMagnetFocusEnabled) {
+      updateMinimap();
       return;
     }
     clampScrollToFocusRegion();
+    updateMinimap();
+  });
+
+  minimapCanvas?.addEventListener('click', (event) => {
+    if (!stage || !canvas || !pdfDocument || canvas.clientWidth <= 0 || canvas.clientHeight <= 0) {
+      return;
+    }
+
+    const rect = minimapCanvas.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    const ratioX = clickX / rect.width;
+    const ratioY = clickY / rect.height;
+
+    const targetLeft = ratioX * canvas.clientWidth - stage.clientWidth / 2;
+    const targetTop = ratioY * canvas.clientHeight - stage.clientHeight / 2;
+
+    const maxLeft = Math.max(0, canvas.clientWidth - stage.clientWidth);
+    const maxTop = Math.max(0, canvas.clientHeight - stage.clientHeight);
+
+    stage.scrollTo({
+      left: Math.max(0, Math.min(targetLeft, maxLeft)),
+      top: Math.max(0, Math.min(targetTop, maxTop)),
+      behavior: 'smooth'
+    });
   });
 
   window.addEventListener('keydown', (event) => {

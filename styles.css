@@ -3209,11 +3209,13 @@ a.or-locked__title:hover {
   font-weight: 700;
   padding: 4px 10px;
   cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease;
 }
 
 .or-reader-toolbar__btn:hover {
   border-color: #2051a0;
   color: #1f3f7a;
+  transform: translateY(-1px);
 }
 
 .or-private-intro {
@@ -3301,6 +3303,9 @@ a.or-locked__title:hover {
   padding: 12px;
   max-height: none;
   overflow: auto;
+  display: grid;
+  align-content: start;
+  gap: 8px;
 }
 
 .or-reader-titles__title {
@@ -3318,6 +3323,7 @@ a.or-locked__title:hover {
   box-shadow: 0 14px 32px rgba(20, 45, 74, 0.08);
   overflow: hidden;
   min-height: 100%;
+  animation: or-fade-slide 320ms ease-out;
 }
 
 .or-viewer__thumbs {
@@ -3443,6 +3449,40 @@ a.or-locked__title:hover {
   height: 100%;
 }
 
+.or-reader-text-preview {
+  margin-top: 6px;
+  border: 1px solid #d9e3ef;
+  border-radius: 10px;
+  padding: 10px;
+  background: linear-gradient(180deg, #fcfdff, #f4f8ff);
+}
+
+.or-reader-text-preview h3 {
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #2b4c73;
+}
+
+.or-reader-text-preview__lead {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: #36506f;
+  font-weight: 700;
+}
+
+.or-reader-text-preview__body {
+  margin: 0;
+  font-size: 0.79rem;
+  line-height: 1.55;
+  color: #415b79;
+}
+
+.or-reader-text-preview__body.is-refresh {
+  animation: or-text-fade 280ms ease;
+}
+
 .or-pdf-stage {
   position: relative;
   overflow: auto;
@@ -3451,6 +3491,12 @@ a.or-locked__title:hover {
   border: 1px solid #d6e0ec;
   border-radius: 10px;
   background: #f2f5fa;
+  transition: background-color 220ms ease, box-shadow 220ms ease;
+}
+
+.or-pdf-stage.is-rendering {
+  background: #ecf1f8;
+  box-shadow: inset 0 0 0 1px rgba(39, 69, 108, 0.08);
 }
 
 .or-pdf {
@@ -3485,6 +3531,7 @@ a.or-locked__title:hover {
   box-shadow: 0 0 0 1px rgba(31, 63, 122, 0.45), 0 0 14px rgba(31, 63, 122, 0.22);
   border-radius: 2px;
   pointer-events: none;
+  animation: or-focus-box-in 220ms ease-out;
 }
 
 .or-pdf-hit-layer {
@@ -3525,6 +3572,51 @@ a.or-locked__title:hover {
   color: #17305f;
 }
 
+.or-reader-minimap {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 180px;
+  border: 1px solid #ccd8e7;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10px 28px rgba(20, 45, 74, 0.2);
+  overflow: hidden;
+  z-index: 4;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.or-reader-minimap.is-hidden {
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+}
+
+#or-minimap-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #eef2f8;
+}
+
+.or-reader-minimap__viewport {
+  position: absolute;
+  border: 1px solid rgba(255, 255, 255, 0.94);
+  box-shadow: 0 0 0 1px rgba(31, 63, 122, 0.75);
+  background: rgba(31, 63, 122, 0.08);
+  pointer-events: none;
+}
+
+.or-reader-minimap__label {
+  margin: 0;
+  padding: 4px 7px;
+  font-size: 0.67rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: #3e5876;
+  background: #f4f8ff;
+}
+
 .or-pdf-highlight {
   position: absolute;
   border: 1px dashed rgba(37, 47, 59, 0.35);
@@ -3538,6 +3630,37 @@ a.or-locked__title:hover {
   0% {
     transform: scale(0.98);
     opacity: 0.35;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes or-fade-slide {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes or-text-fade {
+  0% {
+    opacity: 0.45;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes or-focus-box-in {
+  0% {
+    transform: scale(0.985);
+    opacity: 0.75;
   }
   100% {
     transform: scale(1);
@@ -3680,11 +3803,14 @@ a.or-locked__title:hover {
   cursor: pointer;
   display: grid;
   gap: 3px;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
 }
 
 .or-rss-linker__item-btn:hover {
   border-color: #2051a0;
   background: #f1f6ff;
+  transform: translateX(2px);
+  box-shadow: 0 6px 16px rgba(20, 45, 74, 0.08);
 }
 
 .or-rss-linker__item-btn.is-active {
@@ -3776,6 +3902,12 @@ a.or-locked__title:hover {
 
   .or-reader-titles {
     max-height: 36vh;
+  }
+
+  .or-reader-minimap {
+    width: 136px;
+    right: 10px;
+    bottom: 10px;
   }
 
   .or-reader-toolbar {
