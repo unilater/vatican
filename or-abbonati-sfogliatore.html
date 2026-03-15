@@ -26,6 +26,7 @@
           </div>
           <div class="or-reader-toolbar__right">
             <button type="button" id="or-mobile-list-toggle" class="or-reader-toolbar__btn or-reader-toolbar__btn--mobile" aria-controls="or-reader-titles-panel" aria-expanded="false">Apri titoli</button>
+            <button type="button" id="or-filmstrip-toggle" class="or-reader-toolbar__btn" aria-label="Mostra o nascondi miniature pagine">Miniature OFF</button>
             <button type="button" id="or-fit-toggle" class="or-reader-toolbar__btn" aria-label="Cambia modalita adattamento">Fit pagina</button>
             <button type="button" id="or-zoom-toggle" class="or-reader-toolbar__btn" aria-label="Cambia zoom">Zoom</button>
             <p id="or-viewer-label">Edizione - Pagina 1</p>
@@ -72,6 +73,10 @@
               <p id="or-pdf-hint" class="or-viewer__hint">In attesa PDF per edizione selezionata.</p>
               <p id="or-search-result" class="or-viewer__hint"></p>
 
+              <section id="or-filmstrip" class="or-filmstrip is-hidden" aria-label="Miniature pagine">
+                <ul id="or-filmstrip-list" class="or-filmstrip__list"></ul>
+              </section>
+
               <aside id="or-minimap" class="or-reader-minimap" aria-label="Mini mappa pagina">
                 <canvas id="or-minimap-canvas" width="180" height="230"></canvas>
                 <div id="or-minimap-viewport" class="or-reader-minimap__viewport" aria-hidden="true"></div>
@@ -83,6 +88,16 @@
         <div id="or-mobile-list-backdrop" class="or-mobile-list-backdrop" aria-hidden="true"></div>
       </main>
     </div>
+
+    <dialog id="or-article-dialog" class="or-article-dialog" aria-label="Articolo estratto">
+      <article class="or-article-dialog__sheet" role="document">
+        <button type="button" id="or-article-dialog-close" class="or-article-dialog__close" aria-label="Chiudi finestra articolo">Chiudi</button>
+        <h2 id="or-article-dialog-title" class="or-article-dialog__title">Articolo</h2>
+        <p id="or-article-dialog-body" class="or-article-dialog__body">Contenuto non disponibile.</p>
+        <a id="or-article-dialog-link" class="or-inline-article-link" href="#" target="_blank" rel="noopener" hidden>Apri versione completa</a>
+      </article>
+    </dialog>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.js"></script>
     <script src="or-api-store.js"></script>
     <script src="or-viewer.js"></script>

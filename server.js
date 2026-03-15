@@ -13,6 +13,7 @@ if (!fs.existsSync(DB_DIR)) {
 }
 
 const db = new sqlite3.Database(DB_PATH);
+const RSS_FEED_URL = 'https://www.osservatoreromano.va/it.newsfeed.xml';
 
 const DEFAULT_EDITIONS = [
   {
@@ -208,6 +209,26 @@ app.use(express.static(__dirname));
 
 app.get('/api/health', async (req, res) => {
   res.json({ ok: true, dbPath: DB_PATH });
+});
+
+app.get('/api/rss-live', async (req, res) => {
+  try {
+    const response = await fetch(RSS_FEED_URL);
+    if (!response.ok) {
+      res.status(502).json({ error: `RSS upstream HTTP ${response.status}` });
+      return;
+    }
+
+    const xml = await response.text();
+    if (!xml || !xml.trim()) {
+      res.status(502).json({ error: 'RSS upstream vuoto' });
+      return;
+    }
+
+    res.type('application/xml').send(xml);
+  } catch (error) {
+    res.status(502).json({ error: `RSS upstream non raggiungibile: ${error.message}` });
+  }
 });
 
 app.post('/api/init-defaults', async (req, res) => {

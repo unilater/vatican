@@ -32,6 +32,15 @@
   const mobileListToggle = document.getElementById('or-mobile-list-toggle');
   const mobileListClose = document.getElementById('or-mobile-list-close');
   const mobileListBackdrop = document.getElementById('or-mobile-list-backdrop');
+  const filmstripToggle = document.getElementById('or-filmstrip-toggle');
+  const articleDialog = document.getElementById('or-article-dialog');
+  const articleDialogTitle = document.getElementById('or-article-dialog-title');
+  const articleDialogBody = document.getElementById('or-article-dialog-body');
+  const articleDialogLink = document.getElementById('or-article-dialog-link');
+  const articleDialogClose = document.getElementById('or-article-dialog-close');
+  const filmstrip = document.getElementById('or-filmstrip');
+  const filmstripList = document.getElementById('or-filmstrip-list');
+  const RSS_FEED_URL = 'https://www.osservatoreromano.va/it.newsfeed.xml';
 
   const PDFJS_SOURCES = [
     {
@@ -52,6 +61,7 @@
   let mappings = [];
   let rssItems = [];
   let selectedMappedArticleId = '';
+  let selectedArticle = null;
 
   let pdfDocument = null;
   let currentPage = 1;
@@ -69,7 +79,13 @@
   let isMagnetFocusEnabled = false;
   let isApplyingMagnetScroll = false;
   let isMagnetBypassActive = false;
+  let isFilmstripVisible = false;
+  let pendingRestoredState = null;
+  let persistTimer = null;
+  let touchStartPoint = null;
   const pageCache = new Map();
+  const thumbCache = new Map();
+  const READER_STATE_KEY = 'orReaderStateV2';
 
   const LOREM_IPSUM_PREVIEW = [
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
@@ -116,6 +132,29 @@
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  function normalizeUrl(value) {
+    const raw = String(value || '').trim();
+    if (!raw) {
+      return '';
+    }
+
+    try {
+      const url = new URL(raw, window.location.origin);
+      const cleanPath = url.pathname
+        .replace(/\/+$/, '')
+        .replace(/\.html?$/i, '')
+        .toLowerCase();
+      return cleanPath || '/';
+    } catch (error) {
+      return raw
+        .replace(/^https?:\/\/[^/]+/i, '')
+        .replace(/[?#].*$/, '')
+        .replace(/\/+$/, '')
+        .replace(/\.html?$/i, '')
+        .toLowerCase();
+    }
   }
 
   function escapeHtml(value) {
@@ -196,11 +235,33 @@
     }
   }
 
-  function buildArticleMeta(article) {
-    const normalized = normalizeText(stripHtml(article.titleNormalized || article.title));
-    const rssMatch = rssItems.find((item) => (
-      normalizeText(stripHtml(item.titleNormalized || item.title)) === normalized
+  function getRssMatch(article) {
+    const articleUrl = normalizeUrl(article.url);
+    const articleTitle = normalizeText(stripHtml(article.titleNormalized || article.title));
+
+    if (articleUrl) {
+      const byUrl = rssItems.find((item) => normalizeUrl(item.link) === articleUrl);
+      if (byUrl) {
+        return byUrl;
+      }
+    }
+
+    const exactTitle = rssItems.find((item) => (
+      normalizeText(stripHtml(item.titleNormalized || item.title)) === articleTitle
     ));
+    if (exactTitle) {
+      return exactTitle;
+    }
+
+    const byContains = rssItems.find((item) => {
+      const rssTitle = normalizeText(stripHtml(item.titleNormalized || item.title));
+      return rssTitle.includes(articleTitle) || articleTitle.includes(rssTitle);
+    });
+    return byContains || null;
+  }
+
+  function buildArticleMeta(article) {
+    const rssMatch = getRssMatch(article);
 
     const description = stripHtml(rssMatch?.description || '');
 
@@ -211,6 +272,317 @@
     }
 
     return 'Descrizione non disponibile nel feed RSS.';
+  }
+
+  function updateFilmstripToggleButton() {
+    if (!filmstripToggle) {
+      return;
+    }
+    filmstripToggle.textContent = isFilmstripVisible ? 'Miniature ON' : 'Miniature OFF';
+    filmstripToggle.classList.toggle('is-active', isFilmstripVisible);
+  }
+
+  function closeArticleDialog() {
+    if (articleDialog?.open) {
+      articleDialog.close();
+    }
+  }
+
+  function openArticleDialog() {
+    if (!articleDialog || articleDialog.open || !selectedArticle) {
+      return;
+    }
+    articleDialog.showModal();
+  }
+
+  function updateArticleDialog(article) {
+    if (!articleDialogTitle || !articleDialogBody || !articleDialogLink) {
+      return;
+    }
+
+    if (!article) {
+      articleDialogTitle.textContent = 'Articolo';
+      articleDialogBody.textContent = 'Seleziona un area mappata per aprire il testo in finestra.';
+      articleDialogLink.hidden = true;
+      articleDialogLink.href = '#';
+      return;
+    }
+
+    const rssMatch = getRssMatch(article);
+    const cleanTitle = stripHtml(article.title);
+    const description = stripHtml(rssMatch?.description || '');
+
+    articleDialogTitle.textContent = cleanTitle || 'Articolo';
+    articleDialogBody.textContent = description || 'Descrizione non disponibile nel feed RSS.';
+
+    const link = String(article.url || rssMatch?.link || '').trim();
+    if (link) {
+      articleDialogLink.hidden = false;
+      articleDialogLink.href = link;
+    } else {
+      articleDialogLink.hidden = true;
+      articleDialogLink.href = '#';
+    }
+  }
+
+  function setFilmstripVisible(isVisible) {
+    isFilmstripVisible = Boolean(isVisible);
+    filmstrip?.classList.toggle('is-hidden', !isFilmstripVisible);
+    updateFilmstripToggleButton();
+    schedulePersistReaderState();
+  }
+
+  function setSelectedArticle(article) {
+    selectedArticle = article || null;
+    updateArticleDialog(selectedArticle);
+  }
+
+  function getPersistedReaderState() {
+    try {
+      const raw = localStorage.getItem(READER_STATE_KEY);
+      if (!raw) {
+        return null;
+      }
+      return JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function persistReaderState() {
+    try {
+      const payload = {
+        editionId: selectedEditionId,
+        currentPage,
+        zoomScaleFactor,
+        fitMode,
+        selectedMappedArticleId,
+        isFilmstripVisible
+      };
+      localStorage.setItem(READER_STATE_KEY, JSON.stringify(payload));
+    } catch (error) {
+      // Ignora errori localStorage.
+    }
+  }
+
+  function schedulePersistReaderState() {
+    if (persistTimer) {
+      window.clearTimeout(persistTimer);
+    }
+    persistTimer = window.setTimeout(() => {
+      persistTimer = null;
+      persistReaderState();
+    }, 120);
+  }
+
+  function applyRestoredArticleState() {
+    if (!pendingRestoredState?.selectedMappedArticleId) {
+      setSelectedArticle(null);
+      return;
+    }
+
+    const matched = mappings.find((item) => item.id === pendingRestoredState.selectedMappedArticleId) || null;
+    if (!matched) {
+      return;
+    }
+
+    selectedMappedArticleId = matched.id;
+    setSelectedArticle(matched);
+    renderMappedList();
+  }
+
+  function parseRssItems(xmlText) {
+    const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
+    const parseError = xmlDoc.querySelector('parsererror');
+    if (parseError) {
+      return [];
+    }
+
+    return Array.from(xmlDoc.querySelectorAll('item'))
+      .slice(0, 150)
+      .map((item) => ({
+        title: stripHtml(item.querySelector('title')?.textContent || ''),
+        description: stripHtml(
+          item.querySelector('description')?.textContent
+          || item.querySelector('content\\:encoded')?.textContent
+          || ''
+        ),
+        link: (item.querySelector('link')?.textContent || '').trim(),
+        pubDate: (item.querySelector('pubDate')?.textContent || '').trim()
+      }))
+      .filter((item) => Boolean(item.title));
+  }
+
+  async function fetchRssXml() {
+    const urls = [
+      '/api/rss-live',
+      RSS_FEED_URL,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(RSS_FEED_URL)}`,
+      'https://r.jina.ai/http://www.osservatoreromano.va/it.newsfeed.xml'
+    ];
+
+    for (const url of urls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          continue;
+        }
+        const text = await response.text();
+        if (text && text.trim()) {
+          return text;
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return '';
+  }
+
+  async function refreshRssDescriptionsIfMissing(editionId) {
+    if (!editionId || !window.OrDataStore) {
+      return;
+    }
+
+    const missingCount = rssItems.filter((item) => stripHtml(item.description || '').length === 0).length;
+    if (rssItems.length > 0 && missingCount === 0) {
+      return;
+    }
+
+    const xml = await fetchRssXml();
+    if (!xml) {
+      return;
+    }
+
+    const parsed = parseRssItems(xml);
+    if (parsed.length === 0) {
+      return;
+    }
+
+    const mergedMap = new Map();
+
+    rssItems.forEach((item) => {
+      const key = normalizeUrl(item.link) || `t:${normalizeText(stripHtml(item.titleNormalized || item.title))}`;
+      mergedMap.set(key, { ...item });
+    });
+
+    parsed.forEach((item) => {
+      const key = normalizeUrl(item.link) || `t:${normalizeText(stripHtml(item.titleNormalized || item.title))}`;
+      const existing = mergedMap.get(key);
+      if (!existing) {
+        mergedMap.set(key, { ...item });
+        return;
+      }
+
+      mergedMap.set(key, {
+        ...existing,
+        title: existing.title || item.title,
+        titleNormalized: existing.titleNormalized || item.titleNormalized,
+        description: stripHtml(existing.description || '') || item.description || '',
+        link: existing.link || item.link || '',
+        pubDate: existing.pubDate || item.pubDate || ''
+      });
+    });
+
+    rssItems = Array.from(mergedMap.values());
+
+    try {
+      await window.OrDataStore.upsertRssItems(editionId, parsed);
+    } catch (error) {
+      // Mantiene i dati in memoria anche con schema backend non aggiornato.
+    }
+  }
+
+  function updateFilmstripActive() {
+    if (!filmstripList) {
+      return;
+    }
+
+    const buttons = filmstripList.querySelectorAll('button[data-page]');
+    buttons.forEach((button) => {
+      const page = Number(button.dataset.page || 0);
+      button.classList.toggle('is-active', page === currentPage);
+    });
+  }
+
+  async function goToPage(targetPage) {
+    if (!pdfDocument) {
+      return;
+    }
+
+    const nextPage = Math.max(1, Math.min(maxPage, Number(targetPage) || 1));
+    if (nextPage === currentPage) {
+      return;
+    }
+
+    currentPage = nextPage;
+    await renderPdf();
+    updateFilmstripActive();
+    schedulePersistReaderState();
+  }
+
+  async function renderFilmstrip() {
+    if (!filmstrip || !filmstripList || !pdfDocument) {
+      return;
+    }
+
+    filmstrip.classList.toggle('is-hidden', !isFilmstripVisible);
+    filmstripList.innerHTML = '';
+
+    for (let pageNumber = 1; pageNumber <= maxPage; pageNumber += 1) {
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'or-filmstrip__item';
+      button.dataset.page = String(pageNumber);
+      button.innerHTML = `<span class="or-filmstrip__thumb-wrap"><canvas class="or-filmstrip__thumb" width="74" height="98"></canvas></span><span class="or-filmstrip__num">${pageNumber}</span>`;
+      button.addEventListener('click', () => {
+        goToPage(pageNumber);
+      });
+
+      li.appendChild(button);
+      filmstripList.appendChild(li);
+    }
+
+    updateFilmstripActive();
+    updateFilmstripToggleButton();
+
+    for (let pageNumber = 1; pageNumber <= maxPage; pageNumber += 1) {
+      const button = filmstripList.querySelector(`button[data-page="${pageNumber}"]`);
+      const canvasThumb = button?.querySelector('canvas');
+      if (!button || !canvasThumb) {
+        continue;
+      }
+
+      if (thumbCache.has(pageNumber)) {
+        const image = thumbCache.get(pageNumber);
+        const thumbCtx = canvasThumb.getContext('2d');
+        thumbCtx?.drawImage(image, 0, 0, canvasThumb.width, canvasThumb.height);
+        continue;
+      }
+
+      try {
+        const page = await pdfDocument.getPage(pageNumber);
+        const viewport = page.getViewport({ scale: 0.18 });
+        const offscreen = document.createElement('canvas');
+        offscreen.width = Math.max(1, Math.floor(viewport.width));
+        offscreen.height = Math.max(1, Math.floor(viewport.height));
+
+        const offCtx = offscreen.getContext('2d');
+        if (!offCtx) {
+          continue;
+        }
+
+        await page.render({ canvasContext: offCtx, viewport }).promise;
+        thumbCache.set(pageNumber, offscreen);
+
+        const thumbCtx = canvasThumb.getContext('2d');
+        thumbCtx?.clearRect(0, 0, canvasThumb.width, canvasThumb.height);
+        thumbCtx?.drawImage(offscreen, 0, 0, canvasThumb.width, canvasThumb.height);
+      } catch (error) {
+        // Ignora errori miniatura singola.
+      }
+    }
   }
 
   function setEditionStatus(message, isError = false) {
@@ -615,6 +987,18 @@
     miniCtx.fillRect(0, 0, miniWidth, miniHeight);
     miniCtx.drawImage(canvas, 0, 0, miniWidth, miniHeight);
 
+    if (activeFocusRegion && activeFocusRegion.page === currentPage) {
+      const fx = activeFocusRegion.rect.x * miniWidth;
+      const fy = activeFocusRegion.rect.y * miniHeight;
+      const fw = Math.max(4, activeFocusRegion.rect.w * miniWidth);
+      const fh = Math.max(4, activeFocusRegion.rect.h * miniHeight);
+      miniCtx.fillStyle = 'rgba(252, 215, 84, 0.22)';
+      miniCtx.strokeStyle = '#c28509';
+      miniCtx.lineWidth = 2;
+      miniCtx.fillRect(fx, fy, fw, fh);
+      miniCtx.strokeRect(fx, fy, fw, fh);
+    }
+
     const contentW = canvas.clientWidth;
     const contentH = canvas.clientHeight;
     const viewportX = (stage.scrollLeft / contentW) * miniWidth;
@@ -730,33 +1114,21 @@
           hit.style.top = `${region.rect.y * 100}%`;
           hit.style.width = `${region.rect.w * 100}%`;
           hit.style.height = `${region.rect.h * 100}%`;
-          hit.title = article.url
-            ? `${article.title} - Click: zoom sul titolo. Doppio click: apri versione testuale.`
-            : `${article.title} - Click: zoom sul titolo.`;
+          hit.title = `${article.title} - Click: apri testo articolo.`;
 
-          bindSingleAndDoubleClick(
-            hit,
-            () => {
-              selectedMappedArticleId = article.id;
-              activeFocusRegion = groupInfo.focusRegion;
-              activeFocusRegions = groupInfo.regions;
-              isMagnetFocusEnabled = true;
-              renderMappedList();
-              cinematicZoomToRegion(groupInfo.focusRegion);
-              setArticleTextHint(article, groupInfo);
-              setTextPreview(article, groupInfo);
-            },
-            () => {
-              selectedMappedArticleId = article.id;
-              activeFocusRegion = groupInfo.focusRegion;
-              activeFocusRegions = groupInfo.regions;
-              isMagnetFocusEnabled = true;
-              renderMappedList();
-              readabilityZoomToRegion(groupInfo.focusRegion);
-              setArticleTextHint(article, groupInfo);
-              setTextPreview(article, groupInfo);
-            }
-          );
+          hit.addEventListener('click', () => {
+            selectedMappedArticleId = article.id;
+            setSelectedArticle(article);
+            activeFocusRegion = groupInfo.focusRegion;
+            activeFocusRegions = groupInfo.regions;
+            isMagnetFocusEnabled = true;
+            drawMappedHighlights();
+            updateMinimap();
+            renderMappedList();
+            setArticleTextHint(article, groupInfo);
+            setTextPreview(article, groupInfo);
+            openArticleDialog();
+          });
 
           hitLayer.appendChild(hit);
         });
@@ -827,6 +1199,8 @@
     drawMappedHighlights();
     drawPageHitAreas();
     updateMinimap();
+    updateFilmstripActive();
+    schedulePersistReaderState();
 
     if (focusRegion && focusRegion.page === currentPage) {
       window.requestAnimationFrame(() => {
@@ -967,6 +1341,7 @@
 
     if (mappings.length === 0) {
       setMappedStatus('Nessuna mappatura trovata per questa edizione.');
+      setSelectedArticle(null);
       return;
     }
 
@@ -987,6 +1362,7 @@
         button,
         () => {
           selectedMappedArticleId = article.id;
+          setSelectedArticle(article);
           renderMappedList();
           const groupInfo = getFocusGroupForArticle(article);
           if (groupInfo.focusRegion) {
@@ -1001,6 +1377,7 @@
         },
         () => {
           selectedMappedArticleId = article.id;
+          setSelectedArticle(article);
           renderMappedList();
           const groupInfo = getFocusGroupForArticle(article);
           if (groupInfo.focusRegion) {
@@ -1025,6 +1402,7 @@
       maxPage = 1;
       setPdfHint('PDF non configurato per questa edizione.', true);
       minimap?.classList.add('is-hidden');
+      filmstrip?.classList.add('is-hidden');
       setPdfLoadingState(false);
       return;
     }
@@ -1035,6 +1413,7 @@
     if (!hasPdfJs || !window.pdfjsLib) {
       setPdfHint('PDF.js non disponibile: CDN non raggiungibili.', true);
       minimap?.classList.add('is-hidden');
+      filmstrip?.classList.add('is-hidden');
       setPdfLoadingState(false);
       return;
     }
@@ -1060,19 +1439,30 @@
       isMagnetFocusEnabled = false;
       fitMode = 'page';
       pageCache.clear();
+      thumbCache.clear();
 
       if (stage) {
         stage.classList.remove('is-hidden');
       }
 
       setPdfHint(`PDF collegato: ${path}`);
+      if (pendingRestoredState) {
+        currentPage = Math.max(1, Math.min(maxPage, Number(pendingRestoredState.currentPage) || 1));
+        zoomScaleFactor = clampZoom(Number(pendingRestoredState.zoomScaleFactor) || 1);
+        fitMode = pendingRestoredState.fitMode === 'width' ? 'width' : 'page';
+        setFilmstripVisible(Boolean(pendingRestoredState.isFilmstripVisible));
+      }
+
       await renderPdf();
+      await renderFilmstrip();
+      applyRestoredArticleState();
       setPdfLoadingState(false);
     } catch (error) {
       pdfDocument = null;
       maxPage = 1;
       setPdfHint(`Errore caricamento PDF: ${error?.message || 'sconosciuto'}.`, true);
       minimap?.classList.add('is-hidden');
+      filmstrip?.classList.add('is-hidden');
       setPdfLoadingState(false);
       if (stage) {
         stage.classList.add('is-hidden');
@@ -1104,14 +1494,23 @@
 
       setEditionStatus(`Edizione attiva: ${selectedEdition.name}`);
 
+      const persisted = getPersistedReaderState();
+      pendingRestoredState = persisted && persisted.editionId === editionId ? persisted : null;
+
       mappings = await window.OrDataStore.listMappingsByEdition(editionId);
       try {
         rssItems = await window.OrDataStore.listRssItemsByEdition(editionId);
+        try {
+          await refreshRssDescriptionsIfMissing(editionId);
+        } catch (error) {
+          // Mantiene i dati RSS locali anche se l'aggiornamento feed fallisce.
+        }
       } catch (error) {
         rssItems = [];
       }
       selectedMappedArticleId = '';
       activeFocusRegions = [];
+      setSelectedArticle(null);
       setTextPreview(null);
 
       renderMappedList();
@@ -1158,6 +1557,7 @@
       activeFocusRegions = [];
     }
     animateZoomTo(target, null, 220);
+    schedulePersistReaderState();
   });
 
   fitButton?.addEventListener('click', () => {
@@ -1170,6 +1570,7 @@
     activeFocusRegion = null;
     activeFocusRegions = [];
     renderPdf();
+    schedulePersistReaderState();
   });
 
   stage?.addEventListener('wheel', (event) => {
@@ -1195,6 +1596,41 @@
     clampScrollToFocusRegion();
     updateMinimap();
   });
+
+  stage?.addEventListener('touchstart', (event) => {
+    const touch = event.touches?.[0];
+    if (!touch) {
+      return;
+    }
+    touchStartPoint = {
+      x: touch.clientX,
+      y: touch.clientY,
+      ts: Date.now()
+    };
+  }, { passive: true });
+
+  stage?.addEventListener('touchend', (event) => {
+    const touch = event.changedTouches?.[0];
+    if (!touch || !touchStartPoint || !pdfDocument) {
+      touchStartPoint = null;
+      return;
+    }
+
+    const dx = touch.clientX - touchStartPoint.x;
+    const dy = touch.clientY - touchStartPoint.y;
+    const dt = Date.now() - touchStartPoint.ts;
+    touchStartPoint = null;
+
+    if (Math.abs(dx) < 60 || Math.abs(dy) > 44 || dt > 450 || zoomScaleFactor > 1.08) {
+      return;
+    }
+
+    if (dx < 0) {
+      goToPage(currentPage + 1);
+    } else {
+      goToPage(currentPage - 1);
+    }
+  }, { passive: true });
 
   minimapCanvas?.addEventListener('click', (event) => {
     if (!stage || !canvas || !pdfDocument || canvas.clientWidth <= 0 || canvas.clientHeight <= 0) {
@@ -1234,6 +1670,20 @@
     setMobileListOpen(false);
   });
 
+  filmstripToggle?.addEventListener('click', () => {
+    setFilmstripVisible(!isFilmstripVisible);
+  });
+
+  articleDialogClose?.addEventListener('click', () => {
+    closeArticleDialog();
+  });
+
+  articleDialog?.addEventListener('click', (event) => {
+    if (event.target === articleDialog) {
+      closeArticleDialog();
+    }
+  });
+
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Shift') {
       isMagnetBypassActive = true;
@@ -1263,6 +1713,7 @@
       return;
     }
     loadEditionData(editionSelect.value);
+    schedulePersistReaderState();
   });
 
   async function bootstrap() {
@@ -1282,6 +1733,8 @@
       }
 
       await loadEditionData(selectedEditionId);
+      updateFilmstripToggleButton();
+      updateArticleDialog(null);
 
       if (isMobileLayout()) {
         setMobileListOpen(false);
